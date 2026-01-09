@@ -88,7 +88,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           id: 4,
           name: 'Sekongo Moussa',
           lastMessage: 'Salut mon reuff!',
-          lastMessageTime: '14:00',
+          lastMessageTime: '11:00',
           unreadCount: 2,
         },
         {
@@ -200,7 +200,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
 
   return (
-    <div className={`h-screen flex ${bgColor}`}>
+    <div className={`h-screen flex  ${bgColor}`}>
       {/* Sidebar - Liste des conversations */}
       <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className={`p-4 border-b ${borderColor} flex items-center justify-between`}>
@@ -234,7 +234,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           )}
         </div>
         {loading && conversations.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 border-2 flex items-center justify-center">
             <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}><FiLoader /></p>
           </div>
         ) : (
@@ -248,11 +248,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       </div>
 
       {/* Zone principale - Messages */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex  flex-col">
         {activeConversationId ? (
           <>
             {/* En-tête de la conversation */}
-            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex items-center justify-between`}>
+            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex  items-center justify-between`}>
               {(() => {
                 const conversation = conversations.find(c => c.id === activeConversationId);
                 return (
@@ -260,7 +260,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                     <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                       {conversation?.name || 'Conversation'}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex  items-center gap-2">
                       
                       <button
                         onClick={handleCloseConversation}

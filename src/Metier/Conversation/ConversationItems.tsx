@@ -37,9 +37,9 @@ export const ConversationItem = ({
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-4 cursor-pointer ${hoverBg} transition-colors ${activeBg}`}>
+      className={`flex border-b-2 border-gray-400 items-center gap-3 p-4 cursor-pointer ${hoverBg} transition-colors ${activeBg}`}>
       {/* Avatar */}
-      <div className="shrink-0">
+      <div className="shrink-0" >
         {avatar ? (
           <img
             src={avatar}
@@ -54,7 +54,7 @@ export const ConversationItem = ({
       </div>
 
       {/* Contenu */}
-      <div className="flex-1  min-w-0">
+      <div className="flex-1 min-w-0">
         <div className="flex  items-center justify-between mb-1">
           <h3 className={`font-semibold ${nameColor} truncate`}>
             {name}
