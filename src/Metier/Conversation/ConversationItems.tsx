@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { CiExport } from "react-icons/ci";
+
 
 type ConversationItemProps = {
   id: number;
@@ -35,8 +37,7 @@ export const ConversationItem = ({
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-4 cursor-pointer ${hoverBg} transition-colors ${activeBg}`}
-    >
+      className={`flex items-center gap-3 p-4 cursor-pointer ${hoverBg} transition-colors ${activeBg}`}>
       {/* Avatar */}
       <div className="shrink-0">
         {avatar ? (
@@ -53,18 +54,21 @@ export const ConversationItem = ({
       </div>
 
       {/* Contenu */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
+      <div className="flex-1  min-w-0">
+        <div className="flex  items-center justify-between mb-1">
           <h3 className={`font-semibold ${nameColor} truncate`}>
             {name}
           </h3>
+          
           {lastMessageTime && (
             <span className={`text-xs ${timeColor} shrink-0 ml-2`}>
               {lastMessageTime}
             </span>
           )}
         </div>
-        {lastMessage && (
+        {lastMessage
+         && (
+            
           <div className="flex items-center justify-between">
             <p className={`text-sm ${messageColor} truncate`}>
               {lastMessage}
@@ -75,8 +79,10 @@ export const ConversationItem = ({
               </span>
             )}
           </div>
-        )}
+        ) }
+        
       </div>
+      <div className='h-30 w-11 flex justify-center items-center bottom-0' ><p><CiExport className='w-10 h-7'/></p></div>
     </div>
   );
 };

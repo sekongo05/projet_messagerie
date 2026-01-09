@@ -84,6 +84,20 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           lastMessageTime: '12:00',
           unreadCount: 5,
         },
+        {
+          id: 4,
+          name: 'Sekongo Moussa',
+          lastMessage: 'Salut mon reuff!',
+          lastMessageTime: '14:00',
+          unreadCount: 2,
+        },
+        {
+          id: 5,
+          name: 'Yeo ',
+          lastMessage: 'Envoie moi un capuchuno',
+          lastMessageTime: '6:00',
+          unreadCount: 1,
+        },
       ];
       setConversations(mockConversations);
     } catch (error) {
@@ -130,6 +144,16 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           typeMessage: '1',
           conversationId: 1,
         },
+        {
+          id: 3,
+          content: 'Très bien aussi, merci !',
+          senderId: 2,
+          senderName: 'Jane Smith',
+          timestamp: new Date(Date.now() - 3000000).toISOString(),
+          typeMessage: '1',
+          conversationId: 2,
+        },
+
       ];
       setMessages(mockMessages.filter(m => m.conversationId === conversationId));
     } catch (error) {
