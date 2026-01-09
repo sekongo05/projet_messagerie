@@ -3,16 +3,19 @@ import type { Theme } from '../mode';
 
 type LoginProps = {
   onNavigateToRegister?: () => void;
+  onLoginSuccess?: () => void;
   theme?: Theme;
 };
 
-const Login = ({ onNavigateToRegister, theme = 'light' }: LoginProps = {}) => {
+const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginProps = {}) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess]= useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('')
 
     // TODO: Intégrer avec Auth.api.ts
     // Exemple d'utilisation :
@@ -31,11 +34,24 @@ const Login = ({ onNavigateToRegister, theme = 'light' }: LoginProps = {}) => {
 
     // Simulation pour démonstration
     // Supprimez ce code une fois l'API intégrée
-    if (email) {
+    if (!email || email.trim() === '') {
       // Simuler une erreur d'email inexistant
       setTimeout(() => {
         setError("Utilisateur Introuvable");
       }, 500);
+    }
+    else {
+        setTimeout(()=>{
+            setSuccess('Connexion réussie !!');
+            // Sauvegarder l'email de l'utilisateur connecté
+            localStorage.setItem('userEmail', email);
+            // Naviguer vers Chat après 1 seconde
+            setTimeout(() => {
+              if (onLoginSuccess) {
+                onLoginSuccess();
+              }
+            }, 1000);
+        },100)
     }
   };
 
@@ -97,6 +113,11 @@ const Login = ({ onNavigateToRegister, theme = 'light' }: LoginProps = {}) => {
           >
             Se connecter
           </button>
+          {success && (
+            <div className={`${theme === 'light' ? 'bg-green-50 border-green-200 text-green-700' : theme === 'dark' ? 'bg-red-900/30 border-green-700 text-green-300' : 'bg-green-950 border-green-800 text-green-400'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
+              {success}
+            </div>
+          )}
         </form>
 
         <div className="mt-6 text-center">

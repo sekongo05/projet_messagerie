@@ -33,6 +33,15 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
     // Supprimez ce code une fois l'API intégrée
     if (nom && prenom && email) {
       setTimeout(() => {
+        // Sauvegarder les données utilisateur dans localStorage
+        const userData = {
+          id: Date.now(), // Générer un ID temporaire
+          nom: nom.trim(),
+          prenom: prenom.trim(),
+          email: email.trim(),
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        localStorage.setItem('userEmail', email.trim());
         setSuccess(true);
       }, 500);
     }
@@ -128,8 +137,7 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
 
           <button
             type="submit"
-            className="w-full bg-orange-400 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors"
-          >
+            className="w-full bg-orange-400 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors">
             S'inscrire
           </button>
         </form>

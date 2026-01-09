@@ -5,12 +5,14 @@ interface MessageInputProps {
   conversationId: number;
   userId: number;
   onSend: (formData: FormData) => Promise<void>;
+  theme?: 'light' | 'dark';
 }
 
 const MessageInput = ({
   conversationId,
   userId,
   onSend,
+  theme = 'light',
 }: MessageInputProps) => {
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -76,13 +78,20 @@ const MessageInput = ({
     }
   };
 
+  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
+  const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const textColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-900';
+  const inputBg = theme === 'dark' ? 'bg-gray-700' : 'bg-white';
+  const inputBorder = theme === 'dark' ? 'border-gray-600' : 'border-gray-300';
+  const placeholderColor = theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500';
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-center gap-2 p-3 border-t"
+      className={`flex items-center gap-2 p-3 border-t ${borderColor} ${bgColor}`}
     >
       {/* Input image */}
-      <label className="cursor-pointer">
+      <label className={`cursor-pointer text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} hover:opacity-70 transition-opacity`}>
         📎
         <input
           type="file"
@@ -106,7 +115,7 @@ const MessageInput = ({
               setImage(null);
               setPreview(null);
             }}
-            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs"
+            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs hover:bg-red-600 transition-colors"
           >
             ✕
           </button>
@@ -118,7 +127,7 @@ const MessageInput = ({
         value={content}
         onChange={handleContentChange}
         placeholder="Écris un message..."
-        className="flex-1 resize-none border rounded px-3 py-2"
+        className={`flex-1 resize-none ${inputBorder} ${inputBg} ${textColor} ${placeholderColor} border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all`}
         rows={1}
       />
 
@@ -126,7 +135,7 @@ const MessageInput = ({
       <button
         type="submit"
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-orange-400 hover:bg-orange-500 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {loading ? "..." : "Envoyer"}
       </button>

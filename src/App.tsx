@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import Login from './Pages/Login';
 import Register from './Pages/Register';
+import Chat from './Pages/Chat';
+import Profile from './Pages/Profile';
 import { useTheme, ThemeToggle } from './mode';
 
 const App = () => {
-  const [page, setPage] = useState<'login' | 'register'>('login');
+  const [page, setPage] = useState<'login' | 'register' | 'chat' | 'profile'>('login');
   const { theme, toggleTheme } = useTheme();
 
   const getBackgroundColor = () => {
@@ -13,13 +15,23 @@ const App = () => {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${getBackgroundColor()}`}>
-      <ThemeToggle theme={theme} onToggle={toggleTheme} />
+      {page !== 'chat' && page !== 'profile' && <ThemeToggle theme={theme} onToggle={toggleTheme} />}
 
       {page === 'login' && (
-        <Login onNavigateToRegister={() => setPage('register')} theme={theme} />
+        <Login 
+          onNavigateToRegister={() => setPage('register')} 
+          onLoginSuccess={() => setPage('chat')}
+          theme={theme} 
+        />
       )}
       {page === 'register' && (
         <Register onNavigateToLogin={() => setPage('login')} theme={theme} />
+      )}
+      {page === 'chat' && (
+        <Chat onNavigateToProfile={() => setPage('profile')} />
+      )}
+      {page === 'profile' && (
+        <Profile onNavigateToChat={() => setPage('chat')} />
       )}
     </div>
   );
