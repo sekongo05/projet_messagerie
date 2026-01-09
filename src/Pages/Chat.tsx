@@ -3,6 +3,10 @@ import { ConversationList } from '../Metier/Conversation/ConversationList';
 import { MessagesList } from '../Metier/Messages/MessagesList';
 import MessageInput from '../Metier/Messages/MessageInput';
 import { useTheme } from '../mode';
+import { FiLoader } from "react-icons/fi";
+import { CgProfile } from "react-icons/cg";
+import { CgExport } from "react-icons/cg";
+
 
 // Types
 type Conversation = {
@@ -168,11 +172,23 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   return (
     <div className={`h-screen flex ${bgColor}`}>
       {/* Sidebar - Liste des conversations */}
-      <div className={`w-80 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className={`p-4 border-b ${borderColor} flex items-center justify-between`}>
           <h2 className={`text-[40px] font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Discussions
           </h2>
+          <button
+              
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+              
+            >
+              <CgExport className='w-8 h-10' />
+
+            </button>
           {onNavigateToProfile && (
             <button
               onClick={onNavigateToProfile}
@@ -183,13 +199,13 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               }`}
               title="Voir mon profil"
             >
-              👤
+              <CgProfile className='w-8 h-10' />
             </button>
           )}
         </div>
         {loading && conversations.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
-            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Chargement...</p>
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}><FiLoader /></p>
           </div>
         ) : (
           <ConversationList
