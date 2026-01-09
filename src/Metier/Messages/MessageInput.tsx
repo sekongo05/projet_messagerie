@@ -135,7 +135,7 @@ const MessageInput = ({
       <button
         type="submit"
         disabled={loading}
-        className="bg-orange-400 hover:bg-orange-500 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        className="bg-orange-400 hover:bg-orange-500 cursor-pointer text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {loading ? "..." : "Envoyer"}
       </button>
