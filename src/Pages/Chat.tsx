@@ -6,6 +6,7 @@ import { useTheme } from '../mode';
 import { FiLoader } from "react-icons/fi";
 import { CgProfile } from "react-icons/cg";
 import { CgExport } from "react-icons/cg";
+import axios from 'axios';
 
 
 // Types
@@ -46,6 +47,12 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     loadConversations();
   }, []);
 
+  // Debug: Logger l'état des conversations
+  useEffect(() => {
+    console.log('État des conversations (dans le state):', conversations);
+    console.log('Nombre de conversations:', conversations.length);
+  }, [conversations]);
+
   // Charger les messages quand une conversation est sélectionnée
   useEffect(() => {
     if (activeConversationId) {
@@ -57,111 +64,102 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const loadConversations = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'appel API réel
-      // const response = await Conversation.api.getAll();
-      // setConversations(response.data);
+    const response = await axios.post(
+      "/api/conversation/getByCriteria",
+      {
+        user: 1,
+        data: {}, // vide si tu n’as pas de critères supplémentaires
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
 
-      // Données de démonstration
-      const mockConversations: Conversation[] = [
-        {
-          id: 1,
-          name: 'John Doe',
-          lastMessage: 'Salut, ça va ?',
-          lastMessageTime: '14:30',
-          unreadCount: 1,
-        },
-        {
-          id: 2,
-          name: 'Jane Smith',
-          lastMessage: 'Merci pour ton aide !',
-          lastMessageTime: '13:15',
-          unreadCount: 0,
-        },
-        {
-          id: 3,
-          name: 'Alice Johnson',
-          lastMessage: 'À demain !',
-          lastMessageTime: '12:00',
-          unreadCount: 5,
-        },
-        {
-          id: 4,
-          name: 'Sekongo Moussa',
-          lastMessage: 'Salut mon reuff!',
-          lastMessageTime: '11:00',
-          unreadCount: 2,
-        },
-        {
-          id: 5,
-          name: 'Yeo ',
-          lastMessage: 'Envoie moi un capuchuno',
-          lastMessageTime: '6:00',
-          unreadCount: 1,
-        },
-      ];
-      setConversations(mockConversations);
+    console.log("Réponse API brute des conversations:", response.data);
+
+    // Les données sont dans response.data.items selon la structure de votre API
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data.items || response.data.data || response.data.content || [];
+
+    console.log("Données extraites (avant mapping):", data);
+    console.log("Type de données:", Array.isArray(data) ? 'tableau' : typeof data);
+    console.log("Nombre d'éléments (avant mapping):", Array.isArray(data) ? data.length : 0);
+
+    // Mapping des conversations
+    const mockConversations: Conversation[] = data
+      .filter((item: any) => {
+        const hasId = item && (item.id || item.conversationId);
+        if (!hasId) {
+          console.log("Élément filtré (pas d'id):", item);
+        }
+        return hasId;
+      })
+      .map((item: any) => ({
+        id: item.id || item.conversationId,
+        name: item.name || item.nom || item.titre || "Conversation",
+        lastMessage: item.lastMessage || item.dernierMessage || item.message,
+        lastMessageTime: item.lastMessageTime || item.date || item.timestamp,
+        unreadCount: item.unreadCount || item.nonLu || 0,
+        avatar: item.avatar || item.image,
+      }));
+    
+    console.log("Conversations mappées (après mapping):", mockConversations);
+    console.log("Nombre de conversations mappées:", mockConversations.length);
+    setConversations(mockConversations);
+    console.log("setConversations appelé avec", mockConversations.length, "conversations");
+     
     } catch (error) {
       console.error('Erreur lors du chargement des conversations:', error);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Simuler le chargement des messages (à remplacer par l'appel API réel)
   const loadMessages = async (conversationId: number) => {
-    setLoading(true);
-    try {
-      // TODO: Remplacer par l'appel API réel
-      // const response = await Message.api.getByConversation(conversationId);
-      // setMessages(response.data);
+  setLoading(true);
 
-      // Données de démonstration
-      const mockMessages: Message[] = [
-        {
-          id: 1,
-          content: 'Salut ! Comment ça va ?',
-          senderId: 2,
-          senderName: 'John Doe',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          typeMessage: '1',
-          conversationId: 1,
-        },
-        {
-          id: 2,
-          content: 'Ça va bien, merci ! Et toi ?',
-          senderId: 1,
-          senderName: 'Moi',
-          timestamp: new Date(Date.now() - 3300000).toISOString(),
-          typeMessage: '1',
-          conversationId: 1,
-        },
-        {
-          id: 3,
-          content: 'Très bien aussi, merci !',
-          senderId: 2,
-          senderName: 'John Doe',
-          timestamp: new Date(Date.now() - 3000000).toISOString(),
-          typeMessage: '1',
-          conversationId: 1,
-        },
-        {
-          id: 3,
-          content: 'Très bien aussi, merci !',
-          senderId: 2,
-          senderName: 'Jane Smith',
-          timestamp: new Date(Date.now() - 3000000).toISOString(),
-          typeMessage: '1',
-          conversationId: 2,
-        },
+  try {
+    const response = await axios.post(
+      "/api/message/getByCriteria",
+      {
+        user: 1,
+        data: { conversationId }, // passer la conversation cible
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
 
-      ];
-      setMessages(mockMessages.filter(m => m.conversationId === conversationId));
-    } catch (error) {
-      console.error('Erreur lors du chargement des messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log("Réponse API brute des messages:", response.data);
+
+    // Les données sont probablement dans response.data.items aussi
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data.items || response.data.data || response.data.content || [];
+
+    // Mapping correct pour les messages
+    const messages: Message[] = data
+      .filter((item: any) => item && (item.id || item.messageId)) // Filtrer les éléments invalides
+      .map((item: any) => ({
+        id: item.id || item.messageId,
+        content: item.content || item.contenu || item.message || "",
+        image: item.image || item.fichier || item.file,
+        senderId: item.senderId || item.sender?.id || item.userId || item.user?.id || item.expediteurId || item.expediteur?.id || 0,
+        senderName: item.senderName || item.sender?.name || item.sender?.nom || item.user?.name || item.user?.nom || item.expediteur || item.expediteur?.nom || "Unknown",
+        conversationId: item.conversationId || item.conversation?.id || conversationId,
+        timestamp: item.timestamp || item.createdAt || item.date || new Date().toISOString(),
+        typeMessage: (item.typeMessage || item.type || (item.image ? '2' : '1')) as '1' | '2' | '3',
+      }));
+
+    console.log("Messages mappés:", messages);
+    setMessages(messages);
+
+  } catch (error) {
+    console.error("Erreur lors du chargement des messages:", error);
+    setMessages([]);
+  } finally {
+    setLoading(false);
+  }
+};
+    
 
   // Gérer la sélection d'une conversation
   const handleConversationSelect = (conversationId: number) => {
@@ -319,4 +317,3 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
 };
 
 export default Chat;
-
