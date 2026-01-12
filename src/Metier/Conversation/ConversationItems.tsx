@@ -47,7 +47,7 @@ export const ConversationItem = ({
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-linear-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-lg">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-lg">
             {name.charAt(0).toUpperCase()}
           </div>
         )}
@@ -66,20 +66,18 @@ export const ConversationItem = ({
             </span>
           )}
         </div>
-        {lastMessage
-         && (
-            
+        {lastMessage && (
           <div className="flex items-center justify-between">
             <p className={`text-sm ${messageColor} truncate`}>
               {lastMessage}
             </p>
             {unreadCount > 0 && (
-              <span className="ml-2 bg-orange-500 text-white text-xs font-semibold rounded-full px-2 py-1 shrink-0 min-w-5 text-center">
+              <span className="ml-2 bg-orange-500 text-white text-xs font-semibold rounded-full px-2 py-1 shrink-0 min-w-[20px] text-center">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </div>
-        ) }
+        )}
         
       </div>
       <div className='h-30 w-11 flex justify-center items-center bottom-0' ><p><CiExport className='w-10 h-7'/></p></div>

@@ -60,7 +60,6 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     }
   }, [activeConversationId]);
 
-  // Simuler le chargement des conversations (à remplacer par l'appel API réel)
   const loadConversations = async () => {
     setLoading(true);
     try {
@@ -68,7 +67,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       "/api/conversation/getByCriteria",
       {
         user: 1,
-        data: {}, // vide si tu n’as pas de critères supplémentaires
+        data: {}, 
       },
       { headers: { "Content-Type": "application/json" } }
     );
@@ -84,6 +83,12 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     console.log("Type de données:", Array.isArray(data) ? 'tableau' : typeof data);
     console.log("Nombre d'éléments (avant mapping):", Array.isArray(data) ? data.length : 0);
 
+    // Log pour voir la structure d'un élément
+    if (data.length > 0) {
+      console.log("Structure d'un élément de conversation:", data[0]);
+      console.log("Propriétés disponibles:", Object.keys(data[0]));
+    }
+
     // Mapping des conversations
     const mockConversations: Conversation[] = data
       .filter((item: any) => {
@@ -93,14 +98,18 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
         }
         return hasId;
       })
-      .map((item: any) => ({
-        id: item.id || item.conversationId,
-        name: item.name || item.nom || item.titre || "Conversation",
-        lastMessage: item.lastMessage || item.dernierMessage || item.message,
-        lastMessageTime: item.lastMessageTime || item.date || item.timestamp,
-        unreadCount: item.unreadCount || item.nonLu || 0,
-        avatar: item.avatar || item.image,
-      }));
+      .map((item: any) => {
+        const mapped = {
+          id: item.id || item.conversationId,
+          name: item.name || item.nom || item.titre || "Conversation",
+          lastMessage: item.lastMessage || item.dernierMessage || item.message || item.lastMessageContent || item.content,
+          lastMessageTime: item.lastMessageTime || item.date || item.timestamp || item.createdAt,
+          unreadCount: item.unreadCount || item.nonLu || 0,
+          avatar: item.avatar || item.image,
+        };
+        console.log("Élément mappé:", mapped);
+        return mapped;
+      });
     
     console.log("Conversations mappées (après mapping):", mockConversations);
     console.log("Nombre de conversations mappées:", mockConversations.length);
