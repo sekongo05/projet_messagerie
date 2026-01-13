@@ -210,36 +210,32 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     <div className={`h-screen flex  ${bgColor}`}>
       {/* Sidebar - Liste des conversations */}
       <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-        <div className={`p-4 border-b ${borderColor} flex items-center justify-between`}>
-          <h2 className={`text-[40px] font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Discussions
-          </h2>
-          <button
-              
-              className={`p-2 rounded-lg transition-colors ${
-                theme === 'dark'
-                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-              
-            >
-              <CgExport className='w-8 h-10' />
+        <div className={`p-3 border-4 ${borderColor}  flex flex-col gap-2 items-center justify-between`}>
+          <div className='border-2 w-full justify-between flex border-red-900'>
+            <h2 className={`text-[40px] border-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Discussions
+            </h2>
+            <div>
+                <button  className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' ? 'text-gray-400 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>  <CgExport className='w-8 h-10' />
+                </button>
+                {onNavigateToProfile && (
+                <button onClick={onNavigateToProfile} className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' ? 'text-gray-400 hover:bg-gray-700 hover:text-white'   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+                  title="Voir mon profil"> <CgProfile className='w-8 h-10' />
+                </button> )}
+            </div>
+          </div>
+          <div className='h-10 border-2 w-full flex items-center text-xl  font-bold justify-center gap-8 ' >
+            <div className='cursor-pointer'>Privé</div>
+            <div className='cursor-pointer'>Contacts</div>
+            <div className='cursor-pointer'>Groupe</div>
+            
+          </div>
 
-            </button>
-          {onNavigateToProfile && (
-            <button
-              onClick={onNavigateToProfile}
-              className={`p-2 rounded-lg transition-colors ${
-                theme === 'dark'
-                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-              title="Voir mon profil"
-            >
-              <CgProfile className='w-8 h-10' />
-            </button>
-          )}
         </div>
+          
+        
         {loading && conversations.length === 0 ? (
           <div className="flex-1 border-2 flex items-center justify-center">
             <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}><FiLoader /></p>

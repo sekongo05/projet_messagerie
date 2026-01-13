@@ -34,6 +34,34 @@ export const ConversationItem = ({
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
   const messageColor = theme === 'dark' ? 'text-gray-300' : 'text-gray-600';
 
+  // Fonction pour formater l'heure depuis une date
+  const formatTime = (dateString?: string): string => {
+    if (!dateString) return '';
+    
+    try {
+      // Essayer de parser la date
+      const date = new Date(dateString);
+      
+      // Vérifier si la date est valide
+      if (isNaN(date.getTime())) {
+        // Si ce n'est pas une date valide, retourner tel quel (peut-être déjà formaté)
+        return dateString;
+      }
+      
+      // Formater pour afficher seulement l'heure (HH:MM)
+      return date.toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    } catch (error) {
+      // En cas d'erreur, retourner la valeur originale
+      return dateString;
+    }
+  };
+
+  const formattedTime = formatTime(lastMessageTime);
+
   return (
     <div
       onClick={onClick}
@@ -60,9 +88,9 @@ export const ConversationItem = ({
             {name}
           </h3>
           
-          {lastMessageTime && (
+          {formattedTime && (
             <span className={`text-xs ${timeColor} shrink-0 ml-2`}>
-              {lastMessageTime}
+              {formattedTime}
             </span>
           )}
         </div>
