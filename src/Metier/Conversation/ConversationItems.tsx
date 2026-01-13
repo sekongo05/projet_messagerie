@@ -39,13 +39,50 @@ export const ConversationItem = ({
     if (!dateString) return '';
     
     try {
-      // Essayer de parser la date
+      // Si le format est DD/MM/YYYY (sans heure), on ne peut pas afficher l'heure
+      // Dans ce cas, on retourne la date formatée de manière courte
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+        // Format DD/MM/YYYY - pas d'heure disponible
+        const [day, month] = dateString.split('/');
+        return `${day}/${month}`; // Retourner seulement jour/mois
+      }
+      
+      // Si la chaîne contient "invalid" ou est vide après trim, retourner une valeur par défaut
+      if (typeof dateString === 'string' && (dateString.toLowerCase().includes('invalid') || dateString.trim() === '')) {
+        return '';
+      }
+      
+      // Essayer de parser la date complète
       const date = new Date(dateString);
       
       // Vérifier si la date est valide
       if (isNaN(date.getTime())) {
-        // Si ce n'est pas une date valide, retourner tel quel (peut-être déjà formaté)
-        return dateString;
+        // Si ce n'est pas une date valide, vérifier si c'est une date au format ISO
+        // ou retourner une chaîne vide pour éviter d'afficher "Invalid Date"
+        console.warn('Date invalide:', dateString);
+        return '';
+      }
+      
+      // Vérifier si l'heure est 00:00:00 (ce qui signifie qu'on n'avait pas l'heure)
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const seconds = date.getSeconds();
+      
+      // Si c'est exactement minuit (00:00:00), c'est probablement une date sans heure
+      if (hours === 0 && minutes === 0 && seconds === 0) {
+        // Vérifier si c'est aujourd'hui ou une date différente
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+        
+        if (isToday) {
+          return "Aujourd'hui";
+        } else {
+          // Afficher la date formatée (jour/mois)
+          return date.toLocaleDateString('fr-FR', { 
+            day: '2-digit', 
+            month: '2-digit' 
+          });
+        }
       }
       
       // Formater pour afficher seulement l'heure (HH:MM)

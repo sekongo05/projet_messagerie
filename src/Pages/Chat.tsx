@@ -6,29 +6,8 @@ import { useTheme } from '../mode';
 import { FiLoader } from "react-icons/fi";
 import { CgProfile } from "react-icons/cg";
 import { CgExport } from "react-icons/cg";
-import axios from 'axios';
-
-
-// Types
-type Conversation = {
-  id: number;
-  name: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  avatar?: string;
-};
-
-type Message = {
-  id: number;
-  content?: string;
-  image?: string;
-  senderId: number;
-  senderName: string;
-  timestamp: string;
-  typeMessage: '1' | '2' | '3';
-  conversationId: number;
-};
+import { getConversations, type Conversation } from '../Api/Conversation.api';
+import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
 
 type ChatProps = {
   onNavigateToProfile?: () => void;
@@ -63,59 +42,9 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const loadConversations = async () => {
     setLoading(true);
     try {
-    const response = await axios.post(
-      "/api/conversation/getByCriteria",
-      {
-        user: 1,
-        data: {}, 
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
-
-    console.log("Réponse API brute des conversations:", response.data);
-
-    // Les données sont dans response.data.items selon la structure de votre API
-    const data = Array.isArray(response.data)
-      ? response.data
-      : response.data.items || response.data.data || response.data.content || [];
-
-    console.log("Données extraites (avant mapping):", data);
-    console.log("Type de données:", Array.isArray(data) ? 'tableau' : typeof data);
-    console.log("Nombre d'éléments (avant mapping):", Array.isArray(data) ? data.length : 0);
-
-    // Log pour voir la structure d'un élément
-    if (data.length > 0) {
-      console.log("Structure d'un élément de conversation:", data[0]);
-      console.log("Propriétés disponibles:", Object.keys(data[0]));
-    }
-
-    // Mapping des conversations
-    const mockConversations: Conversation[] = data
-      .filter((item: any) => {
-        const hasId = item && (item.id || item.conversationId);
-        if (!hasId) {
-          console.log("Élément filtré (pas d'id):", item);
-        }
-        return hasId;
-      })
-      .map((item: any) => {
-        const mapped = {
-          id: item.id || item.conversationId,
-          name: item.name || item.nom || item.titre || "Conversation",
-          lastMessage: item.lastMessage || item.dernierMessage || item.message || item.lastMessageContent || item.content,
-          lastMessageTime: item.lastMessageTime || item.date || item.timestamp || item.createdAt,
-          unreadCount: item.unreadCount || item.nonLu || 0,
-          avatar: item.avatar || item.image,
-        };
-        console.log("Élément mappé:", mapped);
-        return mapped;
-      });
-    
-    console.log("Conversations mappées (après mapping):", mockConversations);
-    console.log("Nombre de conversations mappées:", mockConversations.length);
-    setConversations(mockConversations);
-    console.log("setConversations appelé avec", mockConversations.length, "conversations");
-     
+      const conversations = await getConversations(currentUserId);
+      setConversations(conversations);
+      console.log("setConversations appelé avec", conversations.length, "conversations");
     } catch (error) {
       console.error('Erreur lors du chargement des conversations:', error);
       setConversations([]);
@@ -125,50 +54,35 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   };
 
   const loadMessages = async (conversationId: number) => {
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const response = await axios.post(
-      "/api/message/getByCriteria",
-      {
-        user: 1,
-        data: { conversationId }, // passer la conversation cible
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
+    try {
+      const messages = await getMessagesByConversation(conversationId, currentUserId);
+      setMessages(messages);
 
-    console.log("Réponse API brute des messages:", response.data);
-
-    // Les données sont probablement dans response.data.items aussi
-    const data = Array.isArray(response.data)
-      ? response.data
-      : response.data.items || response.data.data || response.data.content || [];
-
-    // Mapping correct pour les messages
-    const messages: Message[] = data
-      .filter((item: any) => item && (item.id || item.messageId)) // Filtrer les éléments invalides
-      .map((item: any) => ({
-        id: item.id || item.messageId,
-        content: item.content || item.contenu || item.message || "",
-        image: item.image || item.fichier || item.file,
-        senderId: item.senderId || item.sender?.id || item.userId || item.user?.id || item.expediteurId || item.expediteur?.id || 0,
-        senderName: item.senderName || item.sender?.name || item.sender?.nom || item.user?.name || item.user?.nom || item.expediteur || item.expediteur?.nom || "Unknown",
-        conversationId: item.conversationId || item.conversation?.id || conversationId,
-        timestamp: item.timestamp || item.createdAt || item.date || new Date().toISOString(),
-        typeMessage: (item.typeMessage || item.type || (item.image ? '2' : '1')) as '1' | '2' | '3',
-      }));
-
-    console.log("Messages mappés:", messages);
-    setMessages(messages);
-
-  } catch (error) {
-    console.error("Erreur lors du chargement des messages:", error);
-    setMessages([]);
-  } finally {
-    setLoading(false);
-  }
-};
-    
+      // Mettre à jour le lastMessageTime de la conversation avec le timestamp du dernier message
+      const lastMessage = getLastMessageFromMessages(messages);
+      if (lastMessage) {
+        setConversations(prevConversations =>
+          prevConversations.map(conv => {
+            if (conv.id === conversationId) {
+              return {
+                ...conv,
+                lastMessage: lastMessage.content || conv.lastMessage,
+                lastMessageTime: lastMessage.timestamp,
+              };
+            }
+            return conv;
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des messages:", error);
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Gérer la sélection d'une conversation
   const handleConversationSelect = (conversationId: number) => {
@@ -185,21 +99,45 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const handleSendMessage = async (formData: FormData) => {
     if (!activeConversationId) return;
 
+    const content = formData.get("content");
+
+    if (!content || typeof content !== "string") {
+      console.error("Message vide");
+      return;
+    }
+
     try {
-      // TODO: Remplacer par l'appel API réel
-      // await Message.api.send(formData);
-      
-      // Simulation : utiliser formData pour éviter l'avertissement
-      console.log('Envoi du message:', formData);
-      
+      await sendMessage(
+        {
+          conversationId: activeConversationId,
+          content: content,
+        },
+        currentUserId
+      );
+
+      // Mettre à jour immédiatement la conversation dans la liste avec le nouveau message
+      // Utiliser un timestamp ISO valide
+      const now = new Date().toISOString();
+      setConversations(prevConversations => 
+        prevConversations.map(conv => {
+          if (conv.id === activeConversationId) {
+            return {
+              ...conv,
+              lastMessage: content,
+              lastMessageTime: now, // Timestamp ISO valide
+            };
+          }
+          return conv;
+        })
+      );
+
       // Recharger les messages après envoi
       await loadMessages(activeConversationId);
       
-      // Recharger les conversations pour mettre à jour le dernier message
-      await loadConversations();
+      // Note: On ne recharge plus toutes les conversations car loadMessages 
+      // met déjà à jour le lastMessageTime de la conversation active
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du message:', error);
-      throw error;
+      console.error("Erreur lors de l'envoi du message :", error);
     }
   };
 
