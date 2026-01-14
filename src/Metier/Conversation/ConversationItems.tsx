@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { CiExport } from "react-icons/ci";
 
 
 type ConversationItemProps = {
@@ -25,41 +24,59 @@ export const ConversationItem = ({
   onClick,
   theme = 'light',
 }: ConversationItemProps) => {
-  const hoverBg = theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
+  // Style WhatsApp : hover discret, pas de bordure épaisse
+  const hoverBg = theme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50';
   const activeBg = theme === 'dark' 
-    ? (isActive ? 'bg-blue-900/20 border-l-4 border-orange-500' : '')
-    : (isActive ? 'bg-blue-50 border-l-4 border-orange-500' : '');
+    ? (isActive ? 'bg-gray-700/30' : '')
+    : (isActive ? 'bg-gray-100' : '');
   
   const nameColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
-  const messageColor = theme === 'dark' ? 'text-gray-300' : 'text-gray-600';
+  const messageColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
 
   // Fonction pour formater l'heure depuis une date
   const formatTime = (dateString?: string): string => {
     if (!dateString) return '';
     
     try {
+      const raw = dateString.trim();
+
       // Si le format est DD/MM/YYYY (sans heure), on ne peut pas afficher l'heure
       // Dans ce cas, on retourne la date formatée de manière courte
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
         // Format DD/MM/YYYY - pas d'heure disponible
-        const [day, month] = dateString.split('/');
+        const [day, month] = raw.split('/');
         return `${day}/${month}`; // Retourner seulement jour/mois
       }
       
       // Si la chaîne contient "invalid" ou est vide après trim, retourner une valeur par défaut
-      if (typeof dateString === 'string' && (dateString.toLowerCase().includes('invalid') || dateString.trim() === '')) {
+      if (raw.toLowerCase().includes('invalid') || raw === '') {
         return '';
+      }
+
+      // Gérer le format DD/MM/YYYY HH:mm:ss (ex: "13/01/2026 14:19:55")
+      if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
+        const [datePart, timePart] = raw.split(/\s+/);
+        const [day, month, year] = datePart.split('/');
+        const iso = `${year}-${month}-${day}T${timePart}`;
+        const parsed = new Date(iso);
+        if (!isNaN(parsed.getTime())) {
+          return parsed.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+        }
       }
       
       // Essayer de parser la date complète
-      const date = new Date(dateString);
+      const date = new Date(raw);
       
       // Vérifier si la date est valide
       if (isNaN(date.getTime())) {
         // Si ce n'est pas une date valide, vérifier si c'est une date au format ISO
         // ou retourner une chaîne vide pour éviter d'afficher "Invalid Date"
-        console.warn('Date invalide:', dateString);
+        console.warn('Date invalide:', raw);
         return '';
       }
       
@@ -102,50 +119,48 @@ export const ConversationItem = ({
   return (
     <div
       onClick={onClick}
-      className={`flex border-b-2 border-gray-400 items-center gap-3 p-4 cursor-pointer ${hoverBg} transition-colors ${activeBg}`}>
-      {/* Avatar */}
-      <div className="shrink-0" >
+      className={`flex items-center gap-3 px-4 py-3 cursor-pointer ${hoverBg} transition-colors ${activeBg} border-b ${theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
+      {/* Avatar - Style WhatsApp */}
+      <div className="shrink-0">
         {avatar ? (
           <img
             src={avatar}
             alt={name}
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-14 h-14 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-lg">
+          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${theme === 'dark' ? 'from-orange-500 to-orange-600' : 'from-orange-400 to-orange-500'} flex items-center justify-center text-white font-semibold text-xl`}>
             {name.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
 
-      {/* Contenu */}
-      <div className="flex-1 min-w-0">
-        <div className="flex  items-center justify-between mb-1">
-          <h3 className={`font-semibold ${nameColor} truncate`}>
+      {/* Contenu - Style WhatsApp */}
+      <div className="flex-1 min-w-0 py-1">
+        <div className="flex items-start justify-between mb-0.5">
+          <h3 className={`font-medium ${nameColor} truncate text-base`}>
             {name}
           </h3>
           
           {formattedTime && (
-            <span className={`text-xs ${timeColor} shrink-0 ml-2`}>
+            <span className={`text-xs ${timeColor} shrink-0 ml-2 mt-0.5`}>
               {formattedTime}
             </span>
           )}
         </div>
         {lastMessage && (
-          <div className="flex items-center justify-between">
-            <p className={`text-sm ${messageColor} truncate`}>
+          <div className="flex items-center justify-between gap-2">
+            <p className={`text-sm ${messageColor} truncate flex-1`}>
               {lastMessage}
             </p>
             {unreadCount > 0 && (
-              <span className="ml-2 bg-orange-500 text-white text-xs font-semibold rounded-full px-2 py-1 shrink-0 min-w-[20px] text-center">
+              <span className={`${theme === 'dark' ? 'bg-green-500' : 'bg-green-500'} text-white text-xs font-semibold rounded-full px-2 py-0.5 shrink-0 min-w-[20px] text-center flex items-center justify-center`}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </div>
         )}
-        
       </div>
-      <div className='h-30 w-11 flex justify-center items-center bottom-0' ><p><CiExport className='w-10 h-7'/></p></div>
     </div>
   );
 };

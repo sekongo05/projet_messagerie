@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useTheme, ThemeToggle } from '../mode';
 
 type User = {
-  id: number;
-  nom: string;
-  prenom: string;
-  email: string;
-  avatar?: string;
+  id?: number;
+  nom?: string;
+  prenoms?: string;
+  email?: string;
+  createdAt?: string;
+  [key: string]: any; // Pour les autres champs possibles
 };
 
 type ProfileProps = {
@@ -23,41 +24,32 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
     loadUserProfile();
   }, []);
 
-  // Charger les informations de l'utilisateur connecté
+  // Charger les informations de l'utilisateur connecté depuis localStorage
   const loadUserProfile = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Récupérer l'email depuis localStorage (sauvegardé lors de la connexion)
+      // Récupérer les données utilisateur sauvegardées lors du login
+      const savedUserData = localStorage.getItem('userData');
       const userEmail = localStorage.getItem('userEmail');
       
-      if (!userEmail) {
-        setError("Aucun utilisateur connecté");
+      if (!savedUserData && !userEmail) {
+        setError("Aucun utilisateur connecté. Veuillez vous connecter.");
         setLoading(false);
         return;
       }
 
-      // TODO: Remplacer par l'appel API réel
-      // const response = await Auth.api.getProfile(userEmail);
-      // setUser(response.data);
-
-      // Simulation : récupérer les données depuis localStorage ou utiliser des données mock
-      const savedUser = localStorage.getItem('currentUser');
-      
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      } else {
-        // Données de démonstration basées sur l'email
-        const mockUser: User = {
-          id: 1,
-          nom: 'Doe',
-          prenom: 'John',
+      if (savedUserData) {
+        // Utiliser les données sauvegardées depuis le login
+        const userData = JSON.parse(savedUserData);
+        setUser(userData);
+      } else if (userEmail) {
+        // Fallback : créer un objet minimal avec l'email si les données complètes ne sont pas disponibles
+        setUser({
           email: userEmail,
-        };
-        setUser(mockUser);
-        // Sauvegarder pour les prochaines fois
-        localStorage.setItem('currentUser', JSON.stringify(mockUser));
+        });
+        setError("Données utilisateur incomplètes. Veuillez vous reconnecter.");
       }
     } catch (err: any) {
       console.error('Erreur lors du chargement du profil:', err);
@@ -84,7 +76,7 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
     );
   }
 
-  if (error) {
+  if (error && !user) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgColor}`}>
         <div className={`${cardBg} rounded-2xl shadow-xl p-8 max-w-md w-full`}>
@@ -105,6 +97,32 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
       </div>
     );
   }
+
+  // Initiales pour l'avatar
+  const getInitials = () => {
+    if (user.prenoms && user.nom) {
+      return (user.prenoms.charAt(0) + user.nom.charAt(0)).toUpperCase();
+    } else if (user.prenoms) {
+      return user.prenoms.charAt(0).toUpperCase();
+    } else if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return '?';
+  };
+
+  // Nom complet
+  const getFullName = () => {
+    if (user.prenoms && user.nom) {
+      return `${user.prenoms} ${user.nom}`;
+    } else if (user.prenoms) {
+      return user.prenoms;
+    } else if (user.nom) {
+      return user.nom;
+    } else if (user.email) {
+      return user.email.split('@')[0];
+    }
+    return 'Utilisateur';
+  };
 
   return (
     <div className={`min-h-screen ${bgColor} py-8 px-4`}>
@@ -132,19 +150,18 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
             <p className={textSecondary}>Vos coordonnées</p>
           </div>
 
+          {/* Message d'erreur si données incomplètes */}
+          {error && (
+            <div className={`mb-4 ${theme === 'dark' ? 'bg-yellow-900/30 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-700'} border px-4 py-3 rounded-lg text-sm`}>
+              {error}
+            </div>
+          )}
+
           {/* Avatar */}
           <div className="flex justify-center mb-6">
-            {user.avatar ? (
-              <img
-                src={user.avatar}
-                alt={`${user.prenom} ${user.nom}`}
-                className="w-24 h-24 rounded-full object-cover border-4 border-orange-400"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-linear-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-bold text-3xl border-4 border-orange-400">
-                {user.prenom.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-bold text-3xl border-4 border-orange-400">
+              {getInitials()}
+            </div>
           </div>
 
           {/* Informations */}
@@ -155,41 +172,59 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
                 Nom complet
               </label>
               <p className={`${textPrimary} text-lg font-semibold`}>
-                {user.prenom} {user.nom}
+                {getFullName()}
               </p>
             </div>
 
             {/* Prénom */}
-            <div className={`p-4 rounded-lg border ${borderColor}`}>
-              <label className={`block text-sm font-medium ${labelColor} mb-2`}>
-                Prénom
-              </label>
-              <p className={textPrimary}>{user.prenom}</p>
-            </div>
+            {user.prenoms && (
+              <div className={`p-4 rounded-lg border ${borderColor}`}>
+                <label className={`block text-sm font-medium ${labelColor} mb-2`}>
+                  Prénom
+                </label>
+                <p className={textPrimary}>{user.prenoms}</p>
+              </div>
+            )}
 
             {/* Nom */}
-            <div className={`p-4 rounded-lg border ${borderColor}`}>
-              <label className={`block text-sm font-medium ${labelColor} mb-2`}>
-                Nom
-              </label>
-              <p className={textPrimary}>{user.nom}</p>
-            </div>
+            {user.nom && (
+              <div className={`p-4 rounded-lg border ${borderColor}`}>
+                <label className={`block text-sm font-medium ${labelColor} mb-2`}>
+                  Nom
+                </label>
+                <p className={textPrimary}>{user.nom}</p>
+              </div>
+            )}
 
             {/* Email */}
-            <div className={`p-4 rounded-lg border ${borderColor}`}>
-              <label className={`block text-sm font-medium ${labelColor} mb-2`}>
-                Email
-              </label>
-              <p className={textPrimary}>{user.email}</p>
-            </div>
+            {user.email && (
+              <div className={`p-4 rounded-lg border ${borderColor}`}>
+                <label className={`block text-sm font-medium ${labelColor} mb-2`}>
+                  Email
+                </label>
+                <p className={textPrimary}>{user.email}</p>
+              </div>
+            )}
 
             {/* ID utilisateur */}
-            <div className={`p-4 rounded-lg border ${borderColor}`}>
-              <label className={`block text-sm font-medium ${labelColor} mb-2`}>
-                ID utilisateur
-              </label>
-              <p className={textSecondary}>#{user.id}</p>
-            </div>
+            {user.id && (
+              <div className={`p-4 rounded-lg border ${borderColor}`}>
+                <label className={`block text-sm font-medium ${labelColor} mb-2`}>
+                  ID utilisateur
+                </label>
+                <p className={textSecondary}>#{user.id}</p>
+              </div>
+            )}
+
+            {/* Date de création */}
+            {user.createdAt && (
+              <div className={`p-4 rounded-lg border ${borderColor}`}>
+                <label className={`block text-sm font-medium ${labelColor} mb-2`}>
+                  Date de création
+                </label>
+                <p className={textSecondary}>{user.createdAt}</p>
+              </div>
+            )}
           </div>
 
           {/* Bouton de rafraîchissement */}
@@ -208,4 +243,3 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
 };
 
 export default Profile;
-

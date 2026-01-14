@@ -1,13 +1,5 @@
 import { ConversationItem } from './ConversationItems';
-
-type Conversation = {
-  id: number;
-  name: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  avatar?: string;
-};
+import type { Conversation } from '../../Api/Conversation.api';
 
 type ConversationListProps = {
   conversations: Conversation[];
@@ -22,7 +14,44 @@ export const ConversationList = ({
   onConversationSelect,
   theme = 'light',
 }: ConversationListProps) => {
-  if (conversations.length === 0) {
+  // Fonction pour parser et convertir une date en timestamp
+  const parseDate = (dateString?: string): number => {
+    if (!dateString) return 0;
+    
+    try {
+      const raw = dateString.trim();
+      
+      // Format DD/MM/YYYY HH:mm:ss
+      if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
+        const [datePart, timePart] = raw.split(/\s+/);
+        const [day, month, year] = datePart.split('/');
+        const iso = `${year}-${month}-${day}T${timePart}`;
+        return new Date(iso).getTime();
+      }
+      
+      // Format DD/MM/YYYY
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('/');
+        const iso = `${year}-${month}-${day}T00:00:00`;
+        return new Date(iso).getTime();
+      }
+      
+      // Format ISO ou autre
+      const date = new Date(raw);
+      return isNaN(date.getTime()) ? 0 : date.getTime();
+    } catch {
+      return 0;
+    }
+  };
+
+  // Trier les conversations du plus récent au moins récent
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const timeA = parseDate((a as any).lastMessageTime || (a as any).createdAt);
+    const timeB = parseDate((b as any).lastMessageTime || (b as any).createdAt);
+    return timeB - timeA; // Décroissant : plus récent en premier
+  });
+
+  if (sortedConversations.length === 0) {
     return (
       <div className={`p-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
         <p>Aucune conversation</p>
@@ -32,14 +61,14 @@ export const ConversationList = ({
 
   return (
     <div className={`h-full overflow-y-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-      {conversations.map((conversation) => (
+      {sortedConversations.map((conversation) => (
         <ConversationItem
           key={conversation.id}
           id={conversation.id}
-          name={conversation.name}
+          name={(conversation as any).name || conversation.titre}
           lastMessage={conversation.lastMessage}
-          lastMessageTime={conversation.lastMessageTime}
-          unreadCount={conversation.unreadCount}
+          lastMessageTime={(conversation as any).lastMessageTime || (conversation as any).createdAt}
+          unreadCount={(conversation as any).unreadCount}
           avatar={conversation.avatar}
           isActive={conversation.id === activeConversationId}
           onClick={() => onConversationSelect(conversation.id)}

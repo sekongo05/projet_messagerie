@@ -1,12 +1,4 @@
-type Message = {
-  id: number;
-  content?: string;
-  image?: string;
-  senderId: number;
-  senderName: string;
-  timestamp: string;
-  typeMessage: '1' | '2' | '3'; // 1: TEXTE, 2: IMAGE, 3: MIXED
-};
+import type { Message } from '../../Api/Message.api';
 
 type MessageItemProps = {
   message: Message;
@@ -19,64 +11,94 @@ export const MessageItem = ({
   currentUserId,
   theme = 'light',
 }: MessageItemProps) => {
-  const isOwnMessage = message.senderId === currentUserId;
+  // Règle UI demandée:
+  // - message REÇU (createdBy !== currentUserId) → affiché à GAUCHE
+  // - message ENVOYÉ (createdBy === currentUserId) → affiché à DROITE
+  const isOwnMessage = message.createdBy === currentUserId;
+  
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
   };
+
+  const time = formatTime(message.createdAt);
 
   return (
     <div
-      className={`flex mb-4 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+      className={`flex w-full ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-1`}
     >
-      <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col max-w-[75%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
         {/* Nom de l'expéditeur (uniquement pour les messages des autres) */}
-        {!isOwnMessage && (
-          <span className={`text-xs mb-1 px-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+        {!isOwnMessage && message.senderName && (
+          <span className={`text-xs mb-1 px-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             {message.senderName}
           </span>
         )}
 
-        {/* Bulle de message */}
+        {/* Bulle de message style WhatsApp */}
         <div
-          className={`rounded-lg px-4 py-2 ${
+          className={`relative rounded-2xl px-3 py-1.5 ${
             isOwnMessage
               ? theme === 'dark'
-                ? 'bg-orange-600 text-white'
-                : 'bg-orange-500 text-white'
+                ? 'bg-orange-500 text-white rounded-br-sm'
+                : 'bg-orange-400 text-white rounded-br-sm'
               : theme === 'dark'
-              ? 'bg-gray-700 text-gray-100'
-              : 'bg-gray-200 text-gray-900'
+              ? 'bg-gray-700 text-gray-100 rounded-bl-sm'
+              : 'bg-white text-gray-900 rounded-bl-sm shadow-sm'
           }`}
         >
           {/* Contenu texte */}
           {message.content && (
-            <p className="mb-2 wrap-break-words">{message.content}</p>
-          )}
-
-          {/* Image */}
-          {message.image && (
-            <div className="mb-2">
-              <img
-                src={message.image}
-                alt="Message"
-                className="max-w-full h-auto rounded-lg"
-              />
+            <div className="flex items-end gap-2">
+              <p className="break-words text-sm leading-relaxed flex-1">{message.content}</p>
+              {/* Timestamp à côté du texte */}
+              {time && (
+                <span
+                  className={`text-[11px] leading-none shrink-0 ${
+                    isOwnMessage
+                      ? 'text-orange-50 opacity-90'
+                      : theme === 'dark'
+                      ? 'text-gray-400'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {time}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Timestamp */}
-          <span
-            className={`text-xs ${
-              isOwnMessage
-                ? 'text-blue-100'
-                : theme === 'dark'
-                ? 'text-gray-400'
-                : 'text-gray-500'
-            }`}
-          >
-            {formatTime(message.timestamp)}
-          </span>
+          {/* Image */}
+          {message.messageImgUrl && message.messageImgUrl !== 'null' && (
+            <div className="mb-1 max-w-full">
+              <img
+                src={message.messageImgUrl || undefined}
+                alt="Message"
+                className="max-w-full h-auto rounded-lg"
+              />
+              {/* Timestamp pour les images */}
+              {time && !message.content && (
+                <div className="flex justify-end items-end mt-1">
+                  <span
+                    className={`text-[11px] leading-none ${
+                      isOwnMessage
+                        ? 'text-orange-50 opacity-90'
+                        : theme === 'dark'
+                        ? 'text-gray-400'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {time}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

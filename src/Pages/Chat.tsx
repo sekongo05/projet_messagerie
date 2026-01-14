@@ -9,6 +9,7 @@ import { CgExport } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
 
+
 type ChatProps = {
   onNavigateToProfile?: () => void;
 };
@@ -42,9 +43,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const loadConversations = async () => {
     setLoading(true);
     try {
-      const conversations = await getConversations(currentUserId);
-      setConversations(conversations);
-      console.log("setConversations appelé avec", conversations.length, "conversations");
+      // Conversation.api.ts retourne la réponse brute { items: [...] }
+      const response: any = await getConversations();
+      const items: Conversation[] = response?.items || [];
+      setConversations(items);
+      console.log("setConversations appelé avec", items.length, "conversations");
     } catch (error) {
       console.error('Erreur lors du chargement des conversations:', error);
       setConversations([]);
@@ -69,7 +72,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               return {
                 ...conv,
                 lastMessage: lastMessage.content || conv.lastMessage,
-                lastMessageTime: lastMessage.timestamp,
+                lastMessageTime: lastMessage.createdAt,
               };
             }
             return conv;
@@ -107,7 +110,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     }
 
     try {
-      await sendMessage(
+      const created = await sendMessage(
         {
           conversationId: activeConversationId,
           content: content,
@@ -116,15 +119,14 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       );
 
       // Mettre à jour immédiatement la conversation dans la liste avec le nouveau message
-      // Utiliser un timestamp ISO valide
-      const now = new Date().toISOString();
       setConversations(prevConversations => 
         prevConversations.map(conv => {
           if (conv.id === activeConversationId) {
             return {
               ...conv,
               lastMessage: content,
-              lastMessageTime: now, // Timestamp ISO valide
+              // on prend le createdAt renvoyé par l'API (déjà normalisé ISO dans Message.api.ts)
+              lastMessageTime: created.createdAt,
             };
           }
           return conv;
@@ -196,10 +198,35 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
             <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex  items-center justify-between`}>
               {(() => {
                 const conversation = conversations.find(c => c.id === activeConversationId);
+                
+                // Récupérer le nom de l'interlocuteur (pas celui de l'utilisateur connecté)
+                // Pour les conversations privées, on doit déterminer qui est l'interlocuteur
+                let interlocutorName = '';
+                
+                if (conversation) {
+                  const conv = conversation as any;
+                  
+                  // Si on a recipientFullName et senderFullName, déterminer lequel est l'interlocuteur
+                  // Pour l'instant, on utilise le titre qui contient généralement le nom de l'interlocuteur
+                  // ou recipientFullName/senderFullName selon le contexte
+                  if (conv.recipientFullName && conv.senderFullName) {
+                    // Le titre contient généralement le nom de l'interlocuteur
+                    interlocutorName = conv.titre || conv.recipientFullName || conv.senderFullName;
+                  } else {
+                    // Sinon, utiliser les autres sources disponibles
+                    interlocutorName = conv.interlocuteurName 
+                      || conv.recipientFullName 
+                      || conv.senderFullName
+                      || conv.name
+                      || conv.titre
+                      || 'Conversation';
+                  }
+                }
+                
                 return (
                   <>
                     <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      {conversation?.name || 'Conversation'}
+                      {interlocutorName || 'Conversation'}
                     </h3>
                     <div className="flex  items-center gap-2">
                       

@@ -1,48 +1,67 @@
+import { useState, useEffect } from 'react';
 import { ConversationList } from '../Metier/Conversation/ConversationList';
-import { useTheme } from '../mode';
-
-type Conversation = {
-  id: number;
-  name: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  avatar?: string;
-  type?: string;
-};
+import { getConversations, type Conversation } from '../Api/Conversation.api';
 
 type GroupesProps = {
-  conversations: Conversation[];
+  onConversationSelect?: (conversationId: number) => void;
   activeConversationId?: number;
-  onConversationSelect: (conversationId: number) => void;
+  theme?: 'light' | 'dark';
 };
 
-const Groupes = ({
-  conversations,
+const Groupes = ({ 
+  onConversationSelect, 
   activeConversationId,
-  onConversationSelect,
-}: GroupesProps) => {
-  const { theme } = useTheme();
-  
-  // Filtrer uniquement les conversations de type groupe
-  const groupeConversations = conversations.filter(
-    (conv) => conv.type === 'groupe' || conv.type === 'group' || !conv.type
-  );
+  theme = 'light' 
+}: GroupesProps = {}) => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadGroupConversations();
+  }, []);
+
+  const loadGroupConversations = async () => {
+    setLoading(true);
+    try {
+      const response: any = await getConversations();
+      const allConversations: Conversation[] = response?.items || [];
+      
+      // Filtrer uniquement les conversations de groupe
+      const groupConversations = allConversations.filter(
+        (conv: any) => conv.typeConversationCode === 'GROUP' || conv.typeConversation === 'GROUP'
+      );
+      
+      setConversations(groupConversations);
+      console.log("Conversations de groupe chargées:", groupConversations.length);
+    } catch (error) {
+      console.error('Erreur lors du chargement des conversations de groupe:', error);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConversationSelect = (conversationId: number) => {
+    if (onConversationSelect) {
+      onConversationSelect(conversationId);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={`flex items-center justify-center p-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <p>Chargement des groupes...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className={`p-3 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-        <h3 className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-          Groupes ({groupeConversations.length})
-        </h3>
-      </div>
-      <ConversationList
-        conversations={groupeConversations}
-        activeConversationId={activeConversationId}
-        onConversationSelect={onConversationSelect}
-        theme={theme}
-      />
-    </div>
+    <ConversationList
+      conversations={conversations}
+      activeConversationId={activeConversationId}
+      onConversationSelect={handleConversationSelect}
+      theme={theme}
+    />
   );
 };
 

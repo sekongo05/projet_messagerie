@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Theme } from '../mode';
+import { login } from '../Api/Auth.api';
 
 type LoginProps = {
   onNavigateToRegister?: () => void;
@@ -10,48 +11,56 @@ type LoginProps = {
 const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginProps = {}) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess]= useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('')
+    setSuccess('');
+    setIsLoading(true);
 
-    // TODO: Intégrer avec Auth.api.ts
-    // Exemple d'utilisation :
-    // import { login } from '../Api/Auth.api';
-    // try {
-    //   const response = await login(email);
-    //   // Gérer la connexion réussie
-    // } catch (err: any) {
-    //   // Si l'API retourne une erreur indiquant que l'email n'existe pas
-    //   if (err.response?.status === 404 || err.message?.includes('email') || err.message?.includes('existe pas')) {
-    //     setError("Cet email n'existe pas dans notre base de données");
-    //   } else {
-    //     setError(err.message || 'Une erreur est survenue lors de la connexion');
-    //   }
-    // }
-
-    // Simulation pour démonstration
-    // Supprimez ce code une fois l'API intégrée
-    if (!email || email.trim() === '') {
-      // Simuler une erreur d'email inexistant
-      setTimeout(() => {
-        setError("Utilisateur Introuvable");
-      }, 500);
-    }
-    else {
-        setTimeout(()=>{
-            setSuccess('Connexion réussie !!');
-            // Sauvegarder l'email de l'utilisateur connecté
-            localStorage.setItem('userEmail', email);
-            // Naviguer vers Chat après 1 seconde
-            setTimeout(() => {
-              if (onLoginSuccess) {
-                onLoginSuccess();
-              }
-            }, 1000);
-        },100)
+    try {
+      const response = await login(email);
+      
+      if (response.hasError) {
+        // Gérer les erreurs de l'API
+        const errorMessage = response.status?.message || 'Une erreur est survenue lors de la connexion';
+        setError(errorMessage);
+      } else {
+        // Connexion réussie
+        setSuccess('Connexion réussie !!');
+        
+        // Sauvegarder les données de l'utilisateur
+        if (response.items && response.items.length > 0) {
+          const userData = response.items[0];
+          localStorage.setItem('userEmail', email);
+          localStorage.setItem('userData', JSON.stringify(userData));
+        }
+        
+        // Naviguer vers Chat après 1 seconde
+        setTimeout(() => {
+          if (onLoginSuccess) {
+            onLoginSuccess();
+          }
+        }, 1000);
+      }
+    } catch (err: any) {
+      // Gérer les erreurs réseau ou autres erreurs
+      let errorMessage = 'Une erreur est survenue lors de la connexion';
+      
+      if (err.response?.data?.status?.message) {
+        // Erreur retournée par l'API
+        errorMessage = err.response.data.status.message;
+      } else if (err.response?.status === 404) {
+        errorMessage = "Utilisateur Introuvable";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,7 +68,6 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
     if (onNavigateToRegister) {
       onNavigateToRegister();
     } else {
-      // Fallback : navigation par URL (nécessite un système de routing)
       window.location.href = '/register';
     }
   };
@@ -96,28 +104,31 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400`}
-              placeholder="votre.email@exemple.com"
+              disabled={isLoading}
+              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              placeholder="votre.email@gmail.com"
             />
           </div>
 
           {error && (
-            <div className={`${theme === 'light' ? 'bg-red-50 border-red-200 text-red-700' : theme === 'dark' ? 'bg-red-900/30 border-red-700 text-red-300' : 'bg-red-950 border-red-800 text-red-400'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
+            <div className={`${theme === 'light' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-red-900/30 border-red-700 text-red-300'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className={`${theme === 'light' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-green-900/30 border-green-700 text-green-300'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
+              {success}
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-orange-400 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors"
+            disabled={isLoading}
+            className={`w-full ${isLoading ? 'bg-orange-300 cursor-not-allowed' : 'bg-orange-400 hover:bg-orange-700'} text-white py-3 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors`}
           >
-            Se connecter
+            {isLoading ? 'Connexion en cours...' : 'Se connecter'}
           </button>
-          {success && (
-            <div className={`${theme === 'light' ? 'bg-green-50 border-green-200 text-green-700' : theme === 'dark' ? 'bg-red-900/30 border-green-700 text-green-300' : 'bg-green-950 border-green-800 text-green-400'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
-              {success}
-            </div>
-          )}
         </form>
 
         <div className="mt-6 text-center">
@@ -137,4 +148,3 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
 };
 
 export default Login;
-

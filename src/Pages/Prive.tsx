@@ -1,48 +1,67 @@
+import { useState, useEffect } from 'react';
 import { ConversationList } from '../Metier/Conversation/ConversationList';
-import { useTheme } from '../mode';
-
-type Conversation = {
-  id: number;
-  name: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  avatar?: string;
-  type?: string;
-};
+import { getConversations, type Conversation } from '../Api/Conversation.api';
 
 type PriveProps = {
-  conversations: Conversation[];
+  onConversationSelect?: (conversationId: number) => void;
   activeConversationId?: number;
-  onConversationSelect: (conversationId: number) => void;
+  theme?: 'light' | 'dark';
 };
 
-const Prive = ({
-  conversations,
+const Prive = ({ 
+  onConversationSelect, 
   activeConversationId,
-  onConversationSelect,
-}: PriveProps) => {
-  const { theme } = useTheme();
-  
-  // Filtrer uniquement les conversations privées
-  const priveConversations = conversations.filter(
-    (conv) => conv.type === 'prive' || conv.type === 'private' || conv.type === '1'
-  );
+  theme = 'light' 
+}: PriveProps = {}) => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadPrivateConversations();
+  }, []);
+
+  const loadPrivateConversations = async () => {
+    setLoading(true);
+    try {
+      const response: any = await getConversations();
+      const allConversations: Conversation[] = response?.items || [];
+      
+      // Filtrer uniquement les conversations privées
+      const privateConversations = allConversations.filter(
+        (conv: any) => conv.typeConversationCode === 'PRIVEE' || conv.typeConversation === 'PRIVEE'
+      );
+      
+      setConversations(privateConversations);
+      console.log("Conversations privées chargées:", privateConversations.length);
+    } catch (error) {
+      console.error('Erreur lors du chargement des conversations privées:', error);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConversationSelect = (conversationId: number) => {
+    if (onConversationSelect) {
+      onConversationSelect(conversationId);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={`flex items-center justify-center p-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <p>Chargement des conversations privées...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className={`p-3 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-        <h3 className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-          Privé ({priveConversations.length})
-        </h3>
-      </div>
-      <ConversationList
-        conversations={priveConversations}
-        activeConversationId={activeConversationId}
-        onConversationSelect={onConversationSelect}
-        theme={theme}
-      />
-    </div>
+    <ConversationList
+      conversations={conversations}
+      activeConversationId={activeConversationId}
+      onConversationSelect={handleConversationSelect}
+      theme={theme}
+    />
   );
 };
 
