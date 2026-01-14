@@ -88,9 +88,51 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
   return (
     <div className={`min-h-screen flex items-center justify-center ${bgGradient} px-4`}>
       <div className={`max-w-md w-full ${cardBg} rounded-2xl shadow-xl p-8 transition-colors duration-300`}>
-        <div className="text-center mb-8">
-          <h1 className={`text-3xl font-bold ${textPrimary} mb-2`}>Connexion</h1>
-          <p className={textSecondary}>Connectez-vous à votre compte</p>
+        {/* Message de bienvenue esthétique */}
+        <div className={`text-center mb-8 pb-6 border-b ${theme === 'light' ? 'border-gray-200' : 'border-gray-700'}`}>
+          {/* Icône de chat avec animation */}
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-lg ${
+            theme === 'light' 
+              ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600' 
+              : 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700'
+          }`}>
+            <svg 
+              className="w-10 h-10 text-white animate-pulse" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+              />
+            </svg>
+          </div>
+          
+          {/* Titre de bienvenue */}
+          <h1 className={`text-4xl font-bold mb-3 ${
+            theme === 'light' 
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent' 
+              : 'text-orange-400'
+          }`}>
+            Bienvenue !
+          </h1>
+          
+          {/* Sous-titre */}
+          <p className={`${textSecondary} text-lg font-medium mb-2`}>
+            Rejoignez vos conversations
+          </p>
+          <p className={`${textSecondary} text-sm`}>
+            Connectez-vous pour accéder à votre messagerie
+          </p>
+        </div>
+
+        {/* Section connexion */}
+        <div className="text-center mb-6">
+          <h2 className={`text-xl font-semibold ${textPrimary} mb-1`}>Connexion</h2>
+          <p className={`${textSecondary} text-sm`}>Entrez votre email pour continuer</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

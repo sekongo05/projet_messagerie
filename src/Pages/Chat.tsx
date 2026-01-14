@@ -154,55 +154,84 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     <div className={`h-screen flex  ${bgColor}`}>
       {/* Sidebar - Liste des conversations */}
       <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-        <div className={`p-3 border-4 ${borderColor}  flex flex-col gap-2 items-center justify-between`}>
-          <div className=' w-full justify-between flex border-red-900'>
-            <h2 className={`text-[40px]  font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        {/* En-tête avec titre et actions */}
+        <div className={`px-4 py-3 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className='flex items-center justify-between mb-3'>
+            <h2 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Discussions
             </h2>
-            <div>
-                <button  className={`p-2 rounded-lg transition-colors ${
-                  theme === 'dark' ? 'text-gray-400 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>  <CgExport className='w-8 h-10' />
+            <div className="flex items-center gap-2">
+              <button 
+                className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                title="Exporter"
+              >
+                <CgExport className='w-5 h-5' />
+              </button>
+              {onNavigateToProfile && (
+                <button 
+                  onClick={onNavigateToProfile} 
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' 
+                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title="Voir mon profil"
+                >
+                  <CgProfile className='w-5 h-5' />
                 </button>
-                {onNavigateToProfile && (
-                <button onClick={onNavigateToProfile} className={`p-2 rounded-lg transition-colors ${
-                  theme === 'dark' ? 'text-gray-400 hover:bg-gray-700 hover:text-white'   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
-                  title="Voir mon profil"> <CgProfile className='w-8 h-10' />
-                </button> )}
+              )}
             </div>
           </div>
-          <div className='h-10 b w-full flex items-center text-xl font-bold justify-center gap-8'>
+          
+          {/* Onglets style WhatsApp */}
+          <div className='flex items-center gap-1'>
             <div 
-              className={`cursor-pointer transition-colors ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ${
                 activeTab === 'prive' 
-                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
-                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark' 
+                    ? 'bg-gray-700 text-orange-400' 
+                    : 'bg-gray-100 text-orange-500'
+                  : theme === 'dark' 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setActiveTab('prive')}
             >
               Privé
             </div>
             <div 
-              className={`cursor-pointer transition-colors ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ${
                 activeTab === 'groupe' 
-                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
-                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark' 
+                    ? 'bg-gray-700 text-orange-400' 
+                    : 'bg-gray-100 text-orange-500'
+                  : theme === 'dark' 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setActiveTab('groupe')}
             >
               Groupe
             </div>
             <div 
-              className={`cursor-pointer transition-colors ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ml-auto ${
                 activeTab === 'contacts' 
-                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
-                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark' 
+                    ? 'bg-gray-700 text-orange-400' 
+                    : 'bg-gray-100 text-orange-500'
+                  : theme === 'dark' 
+                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setActiveTab('contacts')}
             >
               Contacts
             </div>
           </div>
-
         </div>
           
         
