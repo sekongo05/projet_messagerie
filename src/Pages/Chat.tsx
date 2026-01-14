@@ -8,6 +8,9 @@ import { CgProfile } from "react-icons/cg";
 import { CgExport } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
+import Prive from './Prive';
+import Groupes from './Groupes';
+import UserPage from './user';
 
 
 type ChatProps = {
@@ -21,6 +24,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [currentUserId] = useState<number>(1); // À remplacer par l'ID de l'utilisateur connecté
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
 
   // Charger les conversations au montage
   useEffect(() => {
@@ -151,8 +155,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       {/* Sidebar - Liste des conversations */}
       <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className={`p-3 border-4 ${borderColor}  flex flex-col gap-2 items-center justify-between`}>
-          <div className='border-2 w-full justify-between flex border-red-900'>
-            <h2 className={`text-[40px] border-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <div className=' w-full justify-between flex border-red-900'>
+            <h2 className={`text-[40px]  font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Discussions
             </h2>
             <div>
@@ -166,27 +170,74 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 </button> )}
             </div>
           </div>
-          <div className='h-10 border-2 w-full flex items-center text-xl  font-bold justify-center gap-8 ' >
-            <div className='cursor-pointer'>Privé</div>
-            <div className='cursor-pointer'>Contacts</div>
-            <div className='cursor-pointer'>Groupe</div>
-            
+          <div className='h-10 b w-full flex items-center text-xl font-bold justify-center gap-8'>
+            <div 
+              className={`cursor-pointer transition-colors ${
+                activeTab === 'prive' 
+                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
+                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('prive')}
+            >
+              Privé
+            </div>
+            <div 
+              className={`cursor-pointer transition-colors ${
+                activeTab === 'groupe' 
+                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
+                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('groupe')}
+            >
+              Groupe
+            </div>
+            <div 
+              className={`cursor-pointer transition-colors ${
+                activeTab === 'contacts' 
+                  ? theme === 'dark' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-orange-500 border-b-2 border-orange-500'
+                  : theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('contacts')}
+            >
+              Contacts
+            </div>
           </div>
 
         </div>
           
         
-        {loading && conversations.length === 0 ? (
-          <div className="flex-1 border-2 flex items-center justify-center">
+        {loading && conversations.length === 0 && activeTab === 'all' ? (
+          <div className="flex-1  flex items-center justify-center">
             <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}><FiLoader /></p>
           </div>
         ) : (
-          <ConversationList
-            conversations={conversations}
-            activeConversationId={activeConversationId || undefined}
-            onConversationSelect={handleConversationSelect}
-            theme={theme}
-          />
+          <>
+            {activeTab === 'prive' && (
+              <Prive
+                onConversationSelect={handleConversationSelect}
+                activeConversationId={activeConversationId || undefined}
+                theme={theme}
+              />
+            )}
+            {activeTab === 'groupe' && (
+              <Groupes
+                onConversationSelect={handleConversationSelect}
+                activeConversationId={activeConversationId || undefined}
+                theme={theme}
+              />
+            )}
+            {activeTab === 'contacts' && (
+              <UserPage />
+            )}
+            {activeTab === 'all' && (
+              <ConversationList
+                conversations={conversations}
+                activeConversationId={activeConversationId || undefined}
+                onConversationSelect={handleConversationSelect}
+                theme={theme}
+              />
+            )}
+          </>
         )}
       </div>
 

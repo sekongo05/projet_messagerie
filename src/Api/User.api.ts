@@ -14,10 +14,12 @@ export type User = {
 
 export const getUsers = async (userId: number = 1) => {
   try {
-    const response = await axios.post("/user/getByCriteria", {
+    const response = await axios.post("/api/user/getByCriteria", {
       user: userId,
       isSimpleLoading: false,
       data: {}
+    }, {
+      headers: { "Content-Type": "application/json" }
     });
 
     if (response.data.hasError) {
