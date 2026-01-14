@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-
+import { CgExport } from "react-icons/cg";
 
 type ConversationItemProps = {
   id: number;
@@ -10,11 +10,13 @@ type ConversationItemProps = {
   avatar?: string;
   isActive?: boolean;
   onClick: () => void;
+  onExport?: (conversationId: number) => void;
   children?: ReactNode;
   theme?: 'light' | 'dark';
 };
 
 export const ConversationItem = ({
+  id,
   name,
   lastMessage,
   lastMessageTime,
@@ -22,6 +24,7 @@ export const ConversationItem = ({
   avatar,
   isActive = false,
   onClick,
+  onExport,
   theme = 'light',
 }: ConversationItemProps) => {
   // Style WhatsApp : hover discret, pas de bordure épaisse
@@ -142,11 +145,30 @@ export const ConversationItem = ({
             {name}
           </h3>
           
-          {formattedTime && (
-            <span className={`text-xs ${timeColor} shrink-0 ml-2 mt-0.5`}>
-              {formattedTime}
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            {formattedTime && (
+              <span className={`text-xs ${timeColor} mt-0.5`}>
+                {formattedTime}
+              </span>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onExport) {
+                  onExport(id);
+                }
+              }}
+              className={`p-1.5 rounded-full transition-colors ${
+                theme === 'dark'
+                  ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+              title="Exporter les messages"
+              aria-label="Exporter les messages"
+            >
+              <CgExport className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         {lastMessage && (
           <div className="flex items-center justify-between gap-2">
