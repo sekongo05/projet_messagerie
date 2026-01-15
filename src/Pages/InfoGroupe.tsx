@@ -6,6 +6,7 @@ import { FiCalendar, FiHash, FiUsers } from "react-icons/fi";
 import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import LeaveGroupButton from './LeaveGroupButton';
+import AddParticipantButton from './AddParticipantButton';
 
 type InfoGroupeProps = {
   conversation: Conversation;
@@ -365,6 +366,12 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   )}
                 </div>
+
+                {/* Bouton ajouter un participant */}
+                <AddParticipantButton
+                  conversationId={conversation.id}
+                  theme={theme}
+                />
 
                 {/* Bouton quitter le groupe */}
                 <LeaveGroupButton

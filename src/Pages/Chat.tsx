@@ -401,21 +401,26 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               <div className="relative">
                 <button 
                   onClick={() => setShowAddMenu(!showAddMenu)}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`group relative p-2 rounded-xl transition-all duration-300 ${
                     showAddMenu
                       ? theme === 'dark'
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'bg-gradient-to-br from-orange-500/20 to-orange-600/20 text-orange-400 shadow-lg shadow-orange-500/20'
+                        : 'bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 shadow-lg shadow-orange-200/50'
                       : theme === 'dark' 
-                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
+                      : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
                   }`}
                   title="Nouveau"
                 >
-                  <CgAdd className='w-5 h-5' />
+                  <div className={`absolute inset-0 rounded-xl ${
+                    theme === 'dark' 
+                      ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                      : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+                  } transition-all duration-300`} />
+                  <CgAdd className='w-5 h-5 relative z-10 transform group-hover:scale-110 transition-transform duration-300' />
                 </button>
                 
-                {/* Menu déroulant stylisé */}
+                {/* Menu déroulant */}
                 {showAddMenu && (
                   <>
                     <div 
@@ -423,59 +428,43 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                       onClick={() => setShowAddMenu(false)}
                     />
                     <div 
-                      className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-down ${
+                      className={`absolute right-0 mt-2 w-52 rounded-lg shadow-lg z-50 overflow-hidden animate-slide-down ${
                         theme === 'dark' 
                           ? 'bg-gray-800 border border-gray-700' 
-                          : 'bg-white border border-gray-200 shadow-gray-200'
+                          : 'bg-white border border-gray-200'
                       }`}
-                      style={{
-                        animation: 'slideDown 0.2s ease-out'
-                      }}
                     >
-                      <div className="py-2">
+                      <div className="py-1">
                         <button
                           onClick={() => {
                             setActiveTab('contacts');
                             setShowAddMenu(false);
                           }}
-                          className={`w-full text-left px-4 py-3 text-sm font-medium transition-all flex items-center gap-3 group ${
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
                             theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gray-700 hover:text-white'
-                              : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                           }`}
                         >
-                          <div className={`p-1.5 rounded-lg transition-colors ${
-                            theme === 'dark'
-                              ? 'bg-gray-700/50 group-hover:bg-orange-500/20'
-                              : 'bg-gray-100 group-hover:bg-orange-100'
-                          }`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                          </div>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
                           <span>Nouvelle discussion</span>
                         </button>
-                        <div className={`h-px my-1 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`} />
                         <button
                           onClick={() => {
                             setShowCreateGroupe(true);
                             setShowAddMenu(false);
                           }}
-                          className={`w-full text-left px-4 py-3 text-sm font-medium transition-all flex items-center gap-3 group ${
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
                             theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gray-700 hover:text-white'
-                              : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
+                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                           }`}
                         >
-                          <div className={`p-1.5 rounded-lg transition-colors ${
-                            theme === 'dark'
-                              ? 'bg-gray-700/50 group-hover:bg-orange-500/20'
-                              : 'bg-gray-100 group-hover:bg-orange-100'
-                          }`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                          </div>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
                           <span>Nouveau groupe</span>
                         </button>
                       </div>
@@ -485,14 +474,19 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               </div>
               
               <button 
-                className={`p-2 rounded-lg transition-colors ${
+                className={`group relative p-2 rounded-xl transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
+                    : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
                 }`}
                 title="Exporter"
               >
-                <CgExport className='w-5 h-5' />
+                <div className={`absolute inset-0 rounded-xl ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                    : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+                } transition-all duration-300`} />
+                <CgExport className='w-5 h-5 relative z-10 transform group-hover:scale-110 transition-transform duration-300' />
               </button>
               {onNavigateToProfile && (
                 <button 
@@ -514,14 +508,19 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               )}
               <button 
                 onClick={handleLogout} 
-                className={`p-2 rounded-lg transition-colors ${
+                className={`group relative p-2 rounded-xl transition-all duration-300 ${
                   theme === 'dark' 
-                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
+                    : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
                 }`}
                 title="Déconnexion"
               >
-                <CgLogOut className='w-5 h-5' />
+                <div className={`absolute inset-0 rounded-xl ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                    : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+                } transition-all duration-300`} />
+                <CgLogOut className='w-5 h-5 relative z-10 transform group-hover:scale-110 transition-transform duration-300' />
               </button>
             </div>
           </div>
@@ -529,68 +528,64 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           {/* Onglets style WhatsApp */}
           <div className='flex items-center gap-1'>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2 ${
+              className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'prive' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400' 
-                    : 'bg-gray-100 text-orange-500'
+                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
-                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
+                    : 'text-gray-600 hover:text-orange-500 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:shadow-lg hover:shadow-orange-200/50'
               }`}
               onClick={() => setActiveTab('prive')}
             >
-              <CgComment className="w-4 h-4" />
-              <span>Privé</span>
+              <div className={`absolute inset-0 rounded-xl ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                  : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+              } transition-all duration-300`} />
+              <CgComment className="w-4 h-4 relative z-10 transform group-hover:scale-110 transition-transform duration-300" />
+              <span className="relative z-10">Privé</span>
             </div>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2 ${
+              className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'groupe' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400' 
-                    : 'bg-gray-100 text-orange-500'
+                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
-                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
+                    : 'text-gray-600 hover:text-orange-500 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:shadow-lg hover:shadow-orange-200/50'
               }`}
               onClick={() => setActiveTab('groupe')}
             >
-              <FiUsers className="w-4 h-4" />
-              <span>Groupe</span>
+              <div className={`absolute inset-0 rounded-xl ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                  : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+              } transition-all duration-300`} />
+              <FiUsers className="w-4 h-4 relative z-10 transform group-hover:scale-110 transition-transform duration-300" />
+              <span className="relative z-10">Groupe</span>
             </div>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ml-auto flex items-center gap-2 group relative ${
+              className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium ml-auto flex items-center gap-2 ${
                 activeTab === 'contacts' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400' 
-                    : 'bg-gray-100 text-orange-500'
+                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
-                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
+                    : 'text-gray-600 hover:text-orange-500 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:shadow-lg hover:shadow-orange-200/50'
               }`}
               onClick={() => setActiveTab('contacts')}
             >
-              <div className={`relative ${
-                activeTab === 'contacts'
-                  ? theme === 'dark'
-                    ? 'text-orange-400'
-                    : 'text-orange-500'
-                  : theme === 'dark'
-                    ? 'text-gray-400 group-hover:text-gray-300'
-                    : 'text-gray-600 group-hover:text-orange-500'
-              } transition-all duration-300`}>
-                <div className={`absolute inset-0 rounded-full ${
-                  activeTab === 'contacts'
-                    ? theme === 'dark'
-                      ? 'bg-orange-500/20 blur-sm'
-                      : 'bg-orange-400/20 blur-sm'
-                    : theme === 'dark'
-                      ? 'bg-gray-500/0 group-hover:bg-gray-500/10 blur-sm'
-                      : 'bg-orange-200/0 group-hover:bg-orange-200/30 blur-sm'
-                } transition-all duration-300`} />
-                <CgUserList className="w-4 h-4 relative transform group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <span>Contacts</span>
+              <div className={`absolute inset-0 rounded-xl ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                  : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+              } transition-all duration-300`} />
+              <CgUserList className="w-4 h-4 relative z-10 transform group-hover:scale-110 transition-transform duration-300" />
+              <span className="relative z-10">Contacts</span>
             </div>
           </div>
         </div>

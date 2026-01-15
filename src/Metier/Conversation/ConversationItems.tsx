@@ -27,12 +27,6 @@ export const ConversationItem = ({
   onExport,
   theme = 'light',
 }: ConversationItemProps) => {
-  // Style WhatsApp : hover discret, pas de bordure épaisse
-  const hoverBg = theme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50';
-  const activeBg = theme === 'dark' 
-    ? (isActive ? 'bg-gray-700/30' : '')
-    : (isActive ? 'bg-gray-100' : '');
-  
   const nameColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
   const messageColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
@@ -119,29 +113,42 @@ export const ConversationItem = ({
 
   const formattedTime = formatTime(lastMessageTime);
 
+  const baseBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const activeBg = isActive 
+    ? (theme === 'dark' 
+        ? 'bg-gray-700/50 border-l-2 border-orange-500' 
+        : 'bg-orange-50/80 border-l-2 border-orange-400')
+    : '';
+  const hoverBg = theme === 'dark'
+    ? 'hover:bg-gray-700/30'
+    : 'hover:bg-gray-50';
+
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 cursor-pointer ${hoverBg} transition-colors ${activeBg} border-b ${theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
-      {/* Avatar - Style WhatsApp */}
+      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${baseBg} ${activeBg} ${hoverBg} border-b ${theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
+      {/* Avatar - Style avec dégradé */}
       <div className="shrink-0">
         {avatar ? (
-          <img
-            src={avatar}
-            alt={name}
-            className="w-14 h-14 rounded-full object-cover"
-          />
+          <div className="relative w-14 h-14 rounded-full overflow-hidden ring-2 ring-orange-400/30">
+            <img
+              src={avatar}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 via-transparent to-orange-600/20" />
+          </div>
         ) : (
-          <div className={`w-14 h-14 rounded-full border-4 border-orange-400 text-white bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-orange-600 font-semibold text-xl`}>
+          <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-orange-500/30`}>
             {name.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
 
-      {/* Contenu - Style WhatsApp */}
+      {/* Contenu */}
       <div className="flex-1 min-w-0 py-1">
-        <div className="flex items-start justify-between mb-0.5">
-          <h3 className={`font-medium ${nameColor} truncate text-base`}>
+        <div className="flex items-start justify-between mb-1">
+          <h3 className={`font-semibold ${nameColor} truncate text-base`}>
             {name}
           </h3>
           
@@ -158,7 +165,7 @@ export const ConversationItem = ({
                   onExport(id);
                 }
               }}
-              className={`p-1.5 rounded-full transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors ${
                 theme === 'dark'
                   ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
                   : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -176,7 +183,7 @@ export const ConversationItem = ({
               {lastMessage}
             </p>
             {unreadCount > 0 && (
-              <span className={`${theme === 'dark' ? 'bg-green-500' : 'bg-green-500'} text-white text-xs font-semibold rounded-full px-2 py-0.5 shrink-0 min-w-[20px] text-center flex items-center justify-center`}>
+              <span className={`${theme === 'dark' ? 'bg-green-500' : 'bg-green-500'} text-white text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 min-w-[24px] text-center flex items-center justify-center`}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}

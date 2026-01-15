@@ -31,28 +31,29 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave }: LeaveGr
     }
   };
 
-  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
-  const cardBg = theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50';
-  const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
-  const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
+  const borderColor = theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50';
+  const cardBg = theme === 'dark' ? 'bg-gray-800/30 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm';
   
-  // Nouveau design avec gradient orange/rouge
+  // Design avec gradient orange/rouge esthétique
   const buttonBg = theme === 'dark' 
-    ? 'bg-gradient-to-r from-orange-600/80 to-red-600/80 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 shadow-lg shadow-orange-500/20' 
-    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 shadow-lg shadow-orange-200/50';
-  const iconBg = theme === 'dark' ? 'bg-white/20' : 'bg-white/30';
+    ? 'bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 active:from-red-700 active:via-orange-700 active:to-red-700 shadow-lg shadow-red-500/30 hover:shadow-red-500/40' 
+    : 'bg-gradient-to-r from-red-500 via-orange-500 to-red-500 hover:from-red-400 hover:via-orange-400 hover:to-red-400 active:from-red-600 active:via-orange-600 active:to-red-600 shadow-lg shadow-red-400/30 hover:shadow-red-500/40';
+  const iconBg = theme === 'dark' ? 'bg-white/25' : 'bg-white/40';
 
   return (
-    <div className={`${cardBg} rounded-xl p-4 border ${borderColor} transition-all hover:shadow-md`}>
+    <div className={`${cardBg} rounded-2xl p-3 border ${borderColor} transition-all hover:shadow-lg hover:border-red-500/30`}>
       <button
         onClick={handleLeave}
         disabled={loading}
-        className={`w-full ${buttonBg} text-white px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]`}
+        className={`mx-auto ${buttonBg} text-white px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 relative overflow-hidden group`}
       >
-        <div className={`p-2 rounded-lg ${iconBg} backdrop-blur-sm`}>
-          <FiLogOut className="w-5 h-5" />
+        {/* Effet de brillance animé */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+        
+        <div className={`p-1.5 rounded-lg ${iconBg} backdrop-blur-sm relative z-10 group-hover:scale-110 transition-transform duration-300`}>
+          <FiLogOut className="w-4 h-4 relative z-10" />
         </div>
-        <span className="text-base">{loading ? 'Traitement...' : 'Quitter le groupe'}</span>
+        <span className="text-sm relative z-10 tracking-wide">{loading ? 'Traitement...' : 'Quitter le groupe'}</span>
       </button>
     </div>
   );
