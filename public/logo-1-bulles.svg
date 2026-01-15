@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Fond circulaire orange avec gradient -->
+  <defs>
+    <linearGradient id="orangeGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FB923C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EA580C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#orangeGrad1)"/>
+  
+  <!-- Grande bulle de message -->
+  <rect x="14" y="16" width="28" height="22" rx="5" fill="white" opacity="0.95"/>
+  
+  <!-- Petite bulle de réponse -->
+  <rect x="22" y="38" width="24" height="14" rx="4" fill="white" opacity="0.9"/>
+  
+  <!-- Lignes de texte -->
+  <line x1="20" y1="24" x2="34" y2="24" stroke="#F97316" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="29" x2="38" y2="29" stroke="#F97316" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="34" x2="30" y2="34" stroke="#F97316" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Points dans la petite bulle -->
+  <circle cx="30" cy="45" r="1.5" fill="#F97316"/>
+  <circle cx="36" cy="45" r="1.5" fill="#F97316"/>
+</svg>

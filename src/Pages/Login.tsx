@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Theme } from '../mode';
 import { login } from '../Api/Auth.api';
-import { FiCheckCircle, FiXCircle, FiAlertCircle, FiUserX } from 'react-icons/fi';
+import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
 type LoginProps = {
   onNavigateToRegister?: () => void;
