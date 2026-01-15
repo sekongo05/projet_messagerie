@@ -1,18 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CgInfo } from "react-icons/cg";
 import { useTheme } from '../mode';
 import type { Conversation } from '../Api/Conversation.api';
-import { FiCalendar, FiHash } from "react-icons/fi";
+import { FiCalendar, FiHash, FiUsers } from "react-icons/fi";
+import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getUsers, type User } from '../Api/User.api';
 
 type InfoGroupeProps = {
   conversation: Conversation;
   theme?: 'light' | 'dark';
 };
 
+type ParticipantUser = {
+  id: number;
+  nom?: string;
+  prenoms?: string;
+  email?: string;
+  userId: number;
+  [key: string]: any;
+};
+
 const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
   const [isOpen, setIsOpen] = useState(false);
+  const [participants, setParticipants] = useState<ParticipantUser[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const handleShowGroupeInfo = () => {
     setIsOpen(!isOpen);
@@ -20,6 +33,90 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
   const handleClose = () => {
     setIsOpen(false);
+  };
+
+  // Charger les participants quand le panneau est ouvert
+  useEffect(() => {
+    if (isOpen && conversation.id) {
+      loadParticipants(conversation.id);
+    }
+  }, [isOpen, conversation.id]);
+
+  // Charger les participants d'une conversation
+  const loadParticipants = async (conversationId: number) => {
+    setLoadingParticipants(true);
+    
+    try {
+      console.log('Chargement des participants pour la conversation:', conversationId);
+      
+      // Récupérer les participants de la conversation
+      const participantsResponse: any = await getParticipantsByConversationId(conversationId);
+      console.log('Réponse complète des participants:', participantsResponse);
+      
+      // Essayer différents formats de réponse
+      let participantsList: any[] = [];
+      if (Array.isArray(participantsResponse)) {
+        participantsList = participantsResponse;
+      } else if (participantsResponse?.items) {
+        participantsList = participantsResponse.items;
+      } else if (participantsResponse?.data?.items) {
+        participantsList = participantsResponse.data.items;
+      } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+        participantsList = participantsResponse.data;
+      }
+      
+      console.log('Participants extraits:', participantsList);
+      console.log('Nombre de participants:', participantsList.length);
+      
+      if (participantsList.length === 0) {
+        console.warn('Aucun participant trouvé pour la conversation', conversationId);
+        setParticipants([]);
+        setLoadingParticipants(false);
+        return;
+      }
+
+      // Récupérer tous les utilisateurs pour obtenir leurs noms et prénoms
+      console.log('Chargement de tous les utilisateurs...');
+      const usersResponse: any = await getUsers(1);
+      console.log('Réponse complète des utilisateurs:', usersResponse);
+      
+      let allUsers: User[] = [];
+      if (Array.isArray(usersResponse)) {
+        allUsers = usersResponse;
+      } else if (usersResponse?.items) {
+        allUsers = usersResponse.items;
+      } else if (usersResponse?.data?.items) {
+        allUsers = usersResponse.data.items;
+      } else if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+        allUsers = usersResponse.data;
+      }
+      
+      console.log('Utilisateurs extraits:', allUsers);
+      console.log('Nombre d\'utilisateurs:', allUsers.length);
+      
+      // Mapper les participants avec leurs informations utilisateur
+      const participantsWithUserInfo = participantsList.map((participant: any) => {
+        console.log('Traitement du participant:', participant);
+        const userInfo = allUsers.find((u: User) => u.id === participant.userId);
+        console.log('UserInfo trouvé pour userId', participant.userId, ':', userInfo);
+        
+        return {
+          ...participant,
+          nom: userInfo?.nom || participant.nom || '',
+          prenoms: userInfo?.prenoms || participant.prenoms || '',
+          email: userInfo?.email || participant.email || '',
+        };
+      });
+
+      console.log('Participants avec informations utilisateur:', participantsWithUserInfo);
+      setParticipants(participantsWithUserInfo);
+    } catch (err: any) {
+      console.error('Erreur lors du chargement des participants:', err);
+      console.error('Détails de l\'erreur:', err.response?.data || err.message);
+      setParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
+    }
   };
 
   // Extraire les informations de la conversation
@@ -157,6 +254,70 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   </div>
                 )}
+
+                {/* Participants - Carte avec liste */}
+                <div className={`${cardBg} rounded-xl p-4 border ${borderColor} transition-all hover:shadow-md`}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`p-2 rounded-lg ${iconBg} shrink-0`}>
+                      <FiUsers className={`w-5 h-5 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-500'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-xs font-semibold uppercase tracking-wide ${textSecondary} mb-2`}>
+                        Participants ({loadingParticipants ? '...' : participants.length})
+                      </h3>
+                    </div>
+                  </div>
+                  
+                  {loadingParticipants ? (
+                    <div className="text-center py-4">
+                      <p className={textSecondary}>Chargement des participants...</p>
+                    </div>
+                  ) : participants.length > 0 ? (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {participants.map((participant) => (
+                        <div 
+                          key={participant.id} 
+                          className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-600/30' : 'bg-white'} border ${borderColor}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-orange-400 shrink-0`}>
+                              {participant.prenoms && participant.nom
+                                ? (participant.prenoms.charAt(0) + participant.nom.charAt(0)).toUpperCase()
+                                : participant.prenoms
+                                ? participant.prenoms.charAt(0).toUpperCase()
+                                : participant.email
+                                ? participant.email.charAt(0).toUpperCase()
+                                : '?'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`${textPrimary} font-medium text-sm`}>
+                                {participant.prenoms && participant.nom
+                                  ? `${participant.prenoms} ${participant.nom}`
+                                  : participant.prenoms
+                                  ? participant.prenoms
+                                  : participant.nom
+                                  ? participant.nom
+                                  : participant.email
+                                  ? participant.email.split('@')[0]
+                                  : `Participant #${participant.userId || participant.id}`}
+                              </p>
+                              {participant.email && (
+                                <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
+                              )}
+                              {!participant.email && participant.userId && (
+                                <p className={`text-xs ${textSecondary} mt-0.5`}>ID utilisateur: {participant.userId}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className={textSecondary}>Aucun participant trouvé.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

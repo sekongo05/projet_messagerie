@@ -5,7 +5,7 @@ const API_URL = 'http://localhost:8080';
 
 export  const CreateUser= async (email: string, nom: string, prenoms: string)=>{
     try{
-        const response= await axios.post(`${API_URL}/user/create`,{
+        const response= await axios.post(`${API_URL}/conversation/create`,{
             user: 1,
             datas: [{nom,prenoms,email}]
         });
