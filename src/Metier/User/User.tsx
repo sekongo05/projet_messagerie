@@ -131,8 +131,12 @@ export const UserListContainer = ({
   };
 
   const handleUserSelect = (userId: number) => {
+    console.log('=== UserItem cliqué ===', { userId, hasCallback: !!onUserSelect });
     if (onUserSelect) {
+      console.log('Appel de onUserSelect avec userId:', userId);
       onUserSelect(userId);
+    } else {
+      console.warn('onUserSelect n\'est pas défini');
     }
   };
 

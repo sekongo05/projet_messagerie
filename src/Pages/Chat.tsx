@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ConversationList } from '../Metier/Conversation/ConversationList';
 import { MessagesList } from '../Metier/Messages/MessagesList';
 import MessageInput from '../Metier/Messages/MessageInput';
 import { useTheme } from '../mode';
 import { FiLoader } from "react-icons/fi";
-import { CgProfile, CgExport, CgLogOut } from "react-icons/cg";
+import { CgProfile, CgExport, CgLogOut, CgAdd } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
+import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { createConversation } from '../Api/ConversationCreate.api';
 import Prive from './Prive';
 import Groupes from './Groupes';
 import UserPage from './user';
@@ -22,9 +24,34 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
-  const [currentUserId] = useState<number>(1); // À remplacer par l'ID de l'utilisateur connecté
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // Récupérer l'ID de l'utilisateur connecté depuis localStorage
+  const getCurrentUserId = (): number | null => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        if (parsed.id) return parsed.id;
+      }
+      
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const parsed = JSON.parse(currentUser);
+        if (parsed.id) return parsed.id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
+      return null;
+    }
+  };
+
+  // Mémoriser l'ID utilisateur pour éviter de le recalculer à chaque render
+  const currentUserId = useMemo(() => getCurrentUserId() || 1, []); // Fallback à 1 si non trouvé
 
   // Charger les conversations au montage
   useEffect(() => {
@@ -44,14 +71,74 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     }
   }, [activeConversationId]);
 
+  // Filtrer les conversations pour ne garder que celles où l'utilisateur est participant
+  const filterConversationsByParticipant = async (
+    conversations: Conversation[],
+    userId: number
+  ): Promise<Conversation[]> => {
+    if (!userId) {
+      console.warn('Aucun ID utilisateur fourni, aucune conversation ne sera affichée');
+      return [];
+    }
+
+    const filteredConversations: Conversation[] = [];
+
+    // Vérifier chaque conversation pour voir si l'utilisateur est participant
+    for (const conversation of conversations) {
+      try {
+        const participantsResponse: any = await getParticipantsByConversationId(conversation.id);
+        
+        // Extraire la liste des participants
+        let participantsList: any[] = [];
+        if (Array.isArray(participantsResponse)) {
+          participantsList = participantsResponse;
+        } else if (participantsResponse?.items) {
+          participantsList = participantsResponse.items;
+        } else if (participantsResponse?.data?.items) {
+          participantsList = participantsResponse.data.items;
+        } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+          participantsList = participantsResponse.data;
+        }
+
+        // Vérifier si l'utilisateur est dans les participants
+        const isParticipant = participantsList.some(
+          (participant: any) => participant.userId === userId
+        );
+
+        if (isParticipant) {
+          filteredConversations.push(conversation);
+        }
+      } catch (error) {
+        console.error(`Erreur lors de la vérification des participants pour la conversation ${conversation.id}:`, error);
+        // En cas d'erreur, on peut choisir d'inclure ou d'exclure la conversation
+        // Pour l'instant, on l'exclut par sécurité
+      }
+    }
+
+    return filteredConversations;
+  };
+
   const loadConversations = async () => {
     setLoading(true);
     try {
-      // Conversation.api.ts retourne la réponse brute { items: [...] }
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        console.warn('Aucun utilisateur connecté trouvé');
+        setConversations([]);
+        return;
+      }
+
+      // Charger toutes les conversations
       const response: any = await getConversations();
-      const items: Conversation[] = response?.items || [];
-      setConversations(items);
-      console.log("setConversations appelé avec", items.length, "conversations");
+      const allConversations: Conversation[] = response?.items || [];
+      console.log("Conversations chargées:", allConversations.length);
+
+      // Filtrer pour ne garder que celles où l'utilisateur est participant
+      const filteredConversations = await filterConversationsByParticipant(allConversations, userId);
+      console.log("Conversations filtrées (où l'utilisateur est participant):", filteredConversations.length);
+      
+      setConversations(filteredConversations);
     } catch (error) {
       console.error('Erreur lors du chargement des conversations:', error);
       setConversations([]);
@@ -94,6 +181,141 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   // Gérer la sélection d'une conversation
   const handleConversationSelect = (conversationId: number) => {
     setActiveConversationId(conversationId);
+  };
+
+  // Gérer la sélection d'un contact : vérifier si une conversation existe, sinon la créer
+  const handleContactSelect = async (contactId: number) => {
+    console.log('=== handleContactSelect appelé ===', { contactId, currentUserId });
+    
+    try {
+      // Éviter de créer une conversation avec soi-même
+      if (contactId === currentUserId) {
+        console.warn('Impossible de créer une conversation avec soi-même');
+        alert('Impossible de créer une conversation avec soi-même');
+        return;
+      }
+
+      console.log(`Recherche d'une conversation entre l'utilisateur connecté (${currentUserId}) et le contact (${contactId})`);
+      console.log('Conversations actuelles:', conversations.length);
+
+      // Chercher si une conversation privée existe déjà entre l'utilisateur connecté et le contact
+      let existingConversation: Conversation | undefined = undefined;
+
+      // Première vérification : chercher dans les conversations chargées
+      for (const conv of conversations) {
+        const convAny = conv as any;
+        // Vérifier si c'est une conversation privée
+        const isPrivate = convAny.typeConversationCode === 'PRIVEE' || 
+                         convAny.typeConversation === 'PRIVEE' ||
+                         convAny.typeConversationCode === 'PRIVATE' ||
+                         convAny.typeConversation === 'PRIVATE';
+        
+        if (!isPrivate) continue;
+
+        // Vérifier si le contact est l'interlocuteur (méthode directe)
+        // Dans ce cas, l'utilisateur connecté est le créateur et le contact est l'interlocuteur
+        if (convAny.interlocuteurId === contactId) {
+          existingConversation = conv;
+          console.log(`Conversation trouvée via interlocuteurId: ${conv.id}`);
+          break;
+        }
+
+        // Vérifier via les participants de la conversation
+        // Une conversation privée doit avoir exactement 2 participants : l'utilisateur connecté et le contact
+        try {
+          const participantsResponse: any = await getParticipantsByConversationId(conv.id);
+          let participantsList: any[] = [];
+          
+          if (Array.isArray(participantsResponse)) {
+            participantsList = participantsResponse;
+          } else if (participantsResponse?.items) {
+            participantsList = participantsResponse.items;
+          } else if (participantsResponse?.data?.items) {
+            participantsList = participantsResponse.data.items;
+          } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+            participantsList = participantsResponse.data;
+          }
+
+          // Vérifier si les deux participants sont bien l'utilisateur connecté et le contact
+          const hasCurrentUser = participantsList.some((p: any) => p.userId === currentUserId);
+          const hasContact = participantsList.some((p: any) => p.userId === contactId);
+          
+          // Une conversation privée doit avoir exactement 2 participants : l'utilisateur connecté et le contact
+          if (hasCurrentUser && hasContact && participantsList.length === 2) {
+            existingConversation = conv;
+            console.log(`Conversation trouvée via participants: ${conv.id} (${currentUserId} et ${contactId})`);
+            break;
+          }
+        } catch (error) {
+          // Ignorer les erreurs de récupération des participants pour cette conversation
+          console.warn(`Erreur lors de la vérification des participants pour la conversation ${conv.id}:`, error);
+        }
+      }
+
+      if (existingConversation) {
+        // Si la conversation existe, l'ouvrir directement
+        console.log('Conversation existante trouvée:', existingConversation.id);
+        setActiveConversationId(existingConversation.id);
+        // Basculer vers l'onglet privé pour voir la conversation
+        setActiveTab('prive');
+      } else {
+        // Si la conversation n'existe pas, la créer entre l'utilisateur connecté et le contact
+        console.log(`Création d'une nouvelle conversation privée entre l'utilisateur connecté (${currentUserId}) et le contact (${contactId})`);
+        setLoading(true);
+        
+        try {
+          // Créer la conversation avec l'utilisateur connecté comme créateur et le contact comme interlocuteur
+          // Le backend requiert au moins un message (messageContent ou messageImgUrl) pour les conversations privées
+          // On envoie un message par défaut pour satisfaire cette exigence
+          const response: any = await createConversation(
+            currentUserId, // L'utilisateur connecté qui crée la conversation
+            "PRIVEE",
+            {
+              interlocuteurId: contactId, // Le contact sur lequel on a cliqué
+              messageContent: " " // Message avec un espace pour satisfaire l'exigence du backend (message non vide)
+            }
+          );
+
+          console.log('Réponse de createConversation:', response);
+
+          // Extraire l'ID de la conversation créée
+          const newConversationId = response?.items?.[0]?.id || 
+                                   response?.data?.items?.[0]?.id ||
+                                   response?.items?.[0]?.conversationId ||
+                                   response?.id ||
+                                   response?.conversationId;
+
+          console.log('ID de conversation extrait:', newConversationId);
+
+          if (newConversationId) {
+            console.log('Conversation créée avec succès:', newConversationId);
+            
+            // Recharger les conversations pour inclure la nouvelle
+            await loadConversations();
+            
+            // Attendre un peu pour que la nouvelle conversation soit disponible
+            setTimeout(() => {
+              console.log('Ouverture de la conversation:', newConversationId);
+              setActiveConversationId(newConversationId);
+              // Basculer vers l'onglet privé pour voir la conversation
+              setActiveTab('prive');
+            }, 500);
+          } else {
+            console.error('Impossible de récupérer l\'ID de la conversation créée. Réponse complète:', response);
+            alert('Erreur: Impossible de récupérer l\'ID de la conversation créée');
+          }
+        } catch (error: any) {
+          console.error('Erreur lors de la création de la conversation:', error);
+          console.error('Détails de l\'erreur:', error.response?.data || error.message);
+          alert(`Erreur lors de la création de la conversation: ${error.response?.data?.status?.message || error.message || 'Erreur inconnue'}`);
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la sélection du contact:', error);
+      alert(`Erreur: ${error.message || 'Une erreur est survenue'}`);
+    }
   };
 
   // Gérer la déconnexion
@@ -172,7 +394,66 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
             <h2 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Discussions
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 relative">
+              {/* Bouton Add avec menu déroulant */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowAddMenu(!showAddMenu)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' 
+                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title="Nouveau"
+                >
+                  <CgAdd className='w-5 h-5' />
+                </button>
+                
+                {/* Menu déroulant */}
+                {showAddMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowAddMenu(false)}
+                    />
+                    <div 
+                      className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50 ${
+                        theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                      }`}
+                    >
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setActiveTab('contacts');
+                            setShowAddMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            theme === 'dark'
+                              ? 'text-gray-300 hover:bg-gray-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Nouvelle discussion
+                        </button>
+                        <button
+                          onClick={() => {
+                            // TODO: Implémenter la création de groupe
+                            setShowAddMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            theme === 'dark'
+                              ? 'text-gray-300 hover:bg-gray-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Nouveau groupe
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
               <button 
                 className={`p-2 rounded-lg transition-colors ${
                   theme === 'dark' 
@@ -258,9 +539,34 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
         </div>
           
         
-        {loading && conversations.length === 0 && activeTab === 'all' ? (
+        {loading && conversations.length === 0 && (activeTab === 'all' || activeTab === 'prive' || activeTab === 'groupe') ? (
           <div className="flex-1  flex items-center justify-center">
             <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}><FiLoader /></p>
+          </div>
+        ) : activeTab === 'contacts' ? (
+          // Toujours afficher les contacts, même s'il n'y a pas de conversations
+          <UserPage 
+            onUserSelect={handleContactSelect}
+            selectedUserId={undefined}
+          />
+        ) : !loading && conversations.length === 0 ? (
+          // Afficher le bouton add quand il n'y a pas de conversations (pour les onglets prive, groupe, all)
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+            <div className={`text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className="text-lg mb-4">Aucune conversation</p>
+              <p className="text-sm mb-6">Commencez une nouvelle conversation</p>
+            </div>
+            <button
+              onClick={() => setActiveTab('contacts')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                theme === 'dark'
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                  : 'bg-orange-400 hover:bg-orange-500 text-white'
+              } shadow-lg hover:shadow-xl transform hover:scale-105 transition-all`}
+            >
+              <CgAdd className="w-5 h-5" />
+              <span>Nouvelle conversation</span>
+            </button>
           </div>
         ) : (
           <>
@@ -279,9 +585,6 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 activeConversationId={activeConversationId || undefined}
                 theme={theme}
               />
-            )}
-            {activeTab === 'contacts' && (
-              <UserPage />
             )}
             {activeTab === 'all' && (
               <ConversationList

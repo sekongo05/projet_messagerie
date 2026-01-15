@@ -5,6 +5,7 @@ import type { Conversation } from '../Api/Conversation.api';
 import { FiCalendar, FiHash, FiUsers } from "react-icons/fi";
 import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
+import LeaveGroupButton from './LeaveGroupButton';
 
 type InfoGroupeProps = {
   conversation: Conversation;
@@ -17,6 +18,7 @@ type ParticipantUser = {
   prenoms?: string;
   email?: string;
   userId: number;
+  isAdmin?: boolean;
   [key: string]: any;
 };
 
@@ -96,15 +98,21 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
       
       // Mapper les participants avec leurs informations utilisateur
       const participantsWithUserInfo = participantsList.map((participant: any) => {
-        console.log('Traitement du participant:', participant);
+        console.log('Traitement du participant depuis ParticipantConversation API:', participant);
         const userInfo = allUsers.find((u: User) => u.id === participant.userId);
         console.log('UserInfo trouvé pour userId', participant.userId, ':', userInfo);
+        
+        // Extraire isAdmin depuis les données du participant de l'API ParticipantConversation
+        // L'API ParticipantConversation retourne directement isAdmin dans les données du participant
+        const isAdmin = participant.isAdmin === true || participant.isAdmin === 1 || participant.isAdmin === 'true';
+        console.log('isAdmin extrait du participant:', isAdmin, '(valeur brute:', participant.isAdmin, ')');
         
         return {
           ...participant,
           nom: userInfo?.nom || participant.nom || '',
           prenoms: userInfo?.prenoms || participant.prenoms || '',
           email: userInfo?.email || participant.email || '',
+          isAdmin: isAdmin,
         };
       });
 
@@ -290,22 +298,49 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                                 : '?'}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`${textPrimary} font-medium text-sm`}>
-                                {participant.prenoms && participant.nom
-                                  ? `${participant.prenoms} ${participant.nom}`
-                                  : participant.prenoms
-                                  ? participant.prenoms
-                                  : participant.nom
-                                  ? participant.nom
-                                  : participant.email
-                                  ? participant.email.split('@')[0]
-                                  : `Participant #${participant.userId || participant.id}`}
-                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className={`${textPrimary} font-medium text-sm`}>
+                                  {participant.prenoms && participant.nom
+                                    ? `${participant.prenoms} ${participant.nom}`
+                                    : participant.prenoms
+                                    ? participant.prenoms
+                                    : participant.nom
+                                    ? participant.nom
+                                    : participant.email
+                                    ? participant.email.split('@')[0]
+                                    : `Participant #${participant.userId || participant.id}`}
+                                </p>
+                                {/* Badge de statut stylisé */}
+                                {participant.isAdmin !== undefined && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm ${
+                                    participant.isAdmin
+                                      ? theme === 'dark'
+                                        ? 'bg-gradient-to-r from-orange-500/30 to-orange-600/30 text-orange-300 border border-orange-400/40 shadow-orange-500/20'
+                                        : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 border border-orange-300 shadow-orange-200/50'
+                                      : theme === 'dark'
+                                      ? 'bg-gradient-to-r from-gray-600/40 to-gray-700/40 text-gray-300 border border-gray-500/40 shadow-gray-600/20'
+                                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300 shadow-gray-200/50'
+                                  }`}>
+                                    {participant.isAdmin ? (
+                                      <span className="flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                        Admin
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                        Membre
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
                               {participant.email && (
                                 <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
-                              )}
-                              {!participant.email && participant.userId && (
-                                <p className={`text-xs ${textSecondary} mt-0.5`}>ID utilisateur: {participant.userId}</p>
                               )}
                             </div>
                           </div>
@@ -318,6 +353,12 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   )}
                 </div>
+
+                {/* Bouton quitter le groupe */}
+                <LeaveGroupButton
+                  conversationId={conversation.id}
+                  theme={theme}
+                />
               </div>
             </div>
           </div>
