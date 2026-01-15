@@ -376,8 +376,23 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
             />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+              <svg 
+                className={`w-24 h-24 ${theme === 'dark' ? 'text-gray-600' : 'text-gray-300'} animate-pulse-fade`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={1.5} 
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+                />
+              </svg>
+            </div>
+            <p className={`text-lg font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} animate-pulse-fade`}>
               Sélectionnez une conversation pour commencer
             </p>
           </div>
