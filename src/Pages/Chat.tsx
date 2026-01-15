@@ -300,7 +300,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
         {activeConversationId ? (
           <>
             {/* En-tête de la conversation */}
-            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex  items-center justify-between`}>
+            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex  items-center justify-between relative`}>
               {(() => {
                 const conversation = conversations.find(c => c.id === activeConversationId);
                 

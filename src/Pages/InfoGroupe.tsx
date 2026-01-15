@@ -51,15 +51,23 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
         <CgInfo className='w-5 h-5' />
       </button>
 
-      {/* Panneau latéral depuis la droite */}
+      {/* Panneau grand affiché juste en dessous de l'en-tête */}
       {isOpen && (
-        <div 
-          className={`fixed inset-0 z-50 ${overlayBg} transition-opacity`}
-          onClick={handleClose}
-        >
+        <>
+          {/* Overlay pour fermer en cliquant à l'extérieur avec flou */}
           <div 
-            className={`fixed right-0 top-0 h-full ${bgColor} shadow-2xl w-full max-w-md ${borderColor} border-l transform animate-slide-in-right`}
+            className={`fixed inset-0 z-40 ${overlayBg} backdrop-blur-sm transition-opacity`}
+            onClick={handleClose}
+          />
+          <div 
+            className={`fixed ${bgColor} shadow-2xl ${borderColor} border-b z-50 transform animate-slide-in-right`}
             onClick={(e) => e.stopPropagation()}
+            style={{ 
+              right: 0, // Collé à droite
+              width: '50vw', // Moitié de la largeur de la page
+              height: '100vh', // Toute la hauteur de la page
+              top: 0 // Depuis le haut de la page
+            }}
           >
             {/* En-tête du panneau avec gradient */}
             <div className={`relative p-6 ${theme === 'dark' ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-orange-50 to-orange-100'} border-b ${borderColor}`}>
@@ -98,7 +106,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
             </div>
 
             {/* Contenu du panneau */}
-            <div className="p-6 overflow-y-auto h-[calc(100vh-120px)]">
+            <div className="p-6 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
               <div className="space-y-4">
                 {/* Titre du groupe - Carte avec icône */}
                 <div className={`${cardBg} rounded-xl p-4 border ${borderColor} transition-all hover:shadow-md`}>
@@ -152,7 +160,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
