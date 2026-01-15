@@ -67,14 +67,14 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
 
   const bgGradient = theme === 'light' 
     ? 'bg-gradient-to-br from-blue-50 to-indigo-100' 
-    : 'bg-gradient-to-br from-gray-800 to-gray-900';
+    : 'bg-black';
   
-  const cardBg = theme === 'light' ? 'bg-white' : 'bg-gray-800';
+  const cardBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';
   const textPrimary = theme === 'light' ? 'text-gray-800' : 'text-white';
   const textSecondary = theme === 'light' ? 'text-gray-600' : 'text-gray-300';
   const labelColor = theme === 'light' ? 'text-gray-700' : 'text-gray-300';
-  const inputBg = theme === 'light' ? 'bg-white' : 'bg-gray-700';
-  const inputBorder = theme === 'light' ? 'border-gray-300' : 'border-gray-600';
+  const inputBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';
+  const inputBorder = theme === 'light' ? 'border-gray-300' : 'border-gray-800';
   const inputText = theme === 'light' ? 'text-gray-900' : 'text-white';
   const linkColor = theme === 'light' ? 'text-indigo-600 hover:text-indigo-700' : 'text-indigo-400 hover:text-indigo-300';
 

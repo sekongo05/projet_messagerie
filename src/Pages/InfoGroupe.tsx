@@ -146,11 +146,11 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   }, [participants]);
 
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
-  const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const bgColor = theme === 'dark' ? 'bg-black' : 'bg-white';
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
   const overlayBg = theme === 'dark' ? 'bg-black/50' : 'bg-black/30';
-  const cardBg = theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50';
+  const cardBg = theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50';
   const iconBg = theme === 'dark' ? 'bg-orange-500/20' : 'bg-orange-100';
 
   return (
@@ -160,7 +160,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
         onClick={handleShowGroupeInfo}
         className={`p-2 rounded-lg transition-colors ${
           theme === 'dark'
-            ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+            ? 'text-gray-400 hover:bg-gray-900 hover:text-white'
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
         }`}
         title="Informations du groupe"
@@ -202,7 +202,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                   onClick={handleClose}
                   className={`p-2 rounded-lg transition-all ${
                     theme === 'dark'
-                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                      ? 'text-gray-400 hover:bg-gray-900 hover:text-white'
                       : 'text-gray-600 hover:bg-white hover:text-gray-900'
                   }`}
                   aria-label="Fermer"

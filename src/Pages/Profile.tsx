@@ -60,13 +60,13 @@ const Profile = ({ onNavigateToChat }: ProfileProps = {}) => {
     }
   };
 
-  const bgColor = theme === 'dark' ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50';
-  const cardBg = theme === 'dark' ? 'bg-gray-800/50 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-sm';
+  const bgColor = theme === 'dark' ? 'bg-black' : 'bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50';
+  const cardBg = theme === 'dark' ? 'bg-gray-900/80 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-sm';
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
   const labelColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
   const borderColor = theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50';
-  const infoCardBg = theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50';
+  const infoCardBg = theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50';
   const iconBg = theme === 'dark' ? 'bg-orange-500/20' : 'bg-orange-100';
 
   if (loading) {

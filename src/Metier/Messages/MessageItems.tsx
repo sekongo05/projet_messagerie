@@ -92,7 +92,7 @@ export const MessageItem = ({
                 ? 'bg-orange-500 text-white rounded-br-sm'
                 : 'bg-orange-400 text-white rounded-br-sm'
               : theme === 'dark'
-              ? 'bg-gray-700 text-gray-100 rounded-bl-sm'
+              ? 'bg-gray-900 text-gray-100 rounded-bl-sm'
               : 'bg-white text-gray-900 rounded-bl-sm shadow-sm'
           }`}
         >
@@ -132,7 +132,7 @@ export const MessageItem = ({
                 onMouseEnter={() => setIsHovered(true)}
                 className={`absolute z-[35] min-w-[180px] rounded-lg shadow-xl overflow-visible animate-slide-down ${
                   theme === 'dark'
-                    ? 'bg-gray-800'
+                    ? 'bg-gray-900'
                     : 'bg-white shadow-lg'
                 }`}
                 style={{
@@ -158,7 +158,7 @@ export const MessageItem = ({
                         onClick={handleDeleteForMe}
                         className={`w-full text-left px-3 py-1.5 text-sm font-medium transition-all flex items-center gap-2 group rounded-md ${
                           theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-700/80 hover:text-white'
+                            ? 'text-gray-200 hover:bg-gray-800/80 hover:text-white'
                             : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
                         }`}
                       >
@@ -167,12 +167,12 @@ export const MessageItem = ({
                         </svg>
                         <span>Supprimer pour moi</span>
                       </button>
-                      <div className={`h-px mx-2 my-0.5 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                      <div className={`h-px mx-2 my-0.5 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`} />
                       <button
                         onClick={handleDeleteForAll}
                         className={`w-full text-left px-3 py-1.5 text-sm font-medium transition-all flex items-center gap-2 group rounded-md ${
                           theme === 'dark'
-                            ? 'text-red-400 hover:bg-gray-700/80 hover:text-red-300'
+                            ? 'text-red-400 hover:bg-gray-800/80 hover:text-red-300'
                             : 'text-red-600 hover:bg-red-50 hover:text-red-700'
                         }`}
                       >

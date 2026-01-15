@@ -113,20 +113,20 @@ export const ConversationItem = ({
 
   const formattedTime = formatTime(lastMessageTime);
 
-  const baseBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const baseBg = theme === 'dark' ? 'bg-black' : 'bg-white';
   const activeBg = isActive 
     ? (theme === 'dark' 
-        ? 'bg-gray-700/50 border-l-2 border-orange-500' 
+        ? 'bg-gray-900/50 border-l-2 border-orange-500' 
         : 'bg-orange-50/80 border-l-2 border-orange-400')
     : '';
   const hoverBg = theme === 'dark'
-    ? 'hover:bg-gray-700/30'
+    ? 'hover:bg-gray-900/40'
     : 'hover:bg-gray-50';
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${baseBg} ${activeBg} ${hoverBg} border-b ${theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
+      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${baseBg} ${activeBg} ${hoverBg} border-b ${theme === 'dark' ? 'border-gray-900' : 'border-gray-200'}`}>
       {/* Avatar - Style avec dégradé */}
       <div className="shrink-0">
         {avatar ? (

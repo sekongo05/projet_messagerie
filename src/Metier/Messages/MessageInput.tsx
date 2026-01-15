@@ -78,11 +78,11 @@ const MessageInput = ({
     }
   };
 
-  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
-  const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const borderColor = theme === 'dark' ? 'border-gray-900' : 'border-gray-300';
+  const bgColor = theme === 'dark' ? 'bg-black' : 'bg-white';
   const textColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-900';
-  const inputBg = theme === 'dark' ? 'bg-gray-700' : 'bg-white';
-  const inputBorder = theme === 'dark' ? 'border-gray-600' : 'border-gray-300';
+  const inputBg = theme === 'dark' ? 'bg-gray-900' : 'bg-white';
+  const inputBorder = theme === 'dark' ? 'border-gray-800' : 'border-gray-300';
   const placeholderColor = theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500';
 
   return (

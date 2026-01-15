@@ -23,7 +23,7 @@ const App = () => {
   const { theme, toggleTheme } = useTheme();
 
   const getBackgroundColor = () => {
-    return theme === 'light' ? 'bg-gray-50' : 'bg-gray-900';
+    return theme === 'light' ? 'bg-gray-50' : 'bg-black';
   };
 
   return (

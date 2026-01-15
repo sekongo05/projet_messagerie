@@ -32,14 +32,14 @@ const AddParticipantButton = ({ conversationId, theme: themeProp, onAdd }: AddPa
   };
 
   const borderColor = theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50';
-  const cardBg = theme === 'dark' ? 'bg-gray-800/30 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm';
+  const cardBg = theme === 'dark' ? 'bg-gray-900/30 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm';
   const buttonBg = theme === 'dark' 
     ? 'bg-gradient-to-r from-orange-500 via-orange-500 to-orange-600 hover:from-orange-400 hover:via-orange-500 hover:to-orange-600 active:from-orange-600 active:to-orange-700 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40' 
     : 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-500 hover:from-orange-300 hover:via-orange-400 hover:to-orange-500 active:from-orange-500 active:to-orange-600 shadow-lg shadow-orange-400/30 hover:shadow-orange-500/40';
   const iconBg = theme === 'dark' ? 'bg-white/25' : 'bg-white/40';
 
   const overlayBg = theme === 'dark' ? 'bg-black/50' : 'bg-black/30';
-  const modalBg = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  const modalBg = theme === 'dark' ? 'bg-black' : 'bg-white';
 
   return (
     <>
@@ -84,7 +84,7 @@ const AddParticipantButton = ({ conversationId, theme: themeProp, onAdd }: AddPa
                 onClick={handleClose}
                 className={`p-2 rounded-lg transition-colors ${
                   theme === 'dark'
-                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                    ? 'text-gray-400 hover:bg-gray-900 hover:text-white'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >

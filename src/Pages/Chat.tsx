@@ -383,15 +383,15 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     }
   };
 
-  const bgColor = theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100';
-  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
+  const bgColor = theme === 'dark' ? 'bg-black' : 'bg-gray-100';
+  const borderColor = theme === 'dark' ? 'border-gray-900' : 'border-gray-300';
 
   return (
     <div className={`h-screen flex  ${bgColor}`}>
       {/* Sidebar - Liste des conversations */}
-      <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className={`w-120 border-r ${borderColor} flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
         {/* En-tête avec titre et actions */}
-        <div className={`px-4 py-3 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`px-4 py-3 border-b ${borderColor} ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
           <div className='flex items-center justify-between mb-3'>
             <h2 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               Discussions
@@ -430,7 +430,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                     <div 
                       className={`absolute right-0 mt-2 w-52 rounded-lg shadow-lg z-50 overflow-hidden animate-slide-down ${
                         theme === 'dark' 
-                          ? 'bg-gray-800 border border-gray-700' 
+                          ? 'bg-gray-900 border border-gray-800' 
                           : 'bg-white border border-gray-200'
                       }`}
                     >
@@ -442,7 +442,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
                             theme === 'dark'
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              ? 'text-gray-300 hover:bg-gray-900 hover:text-white'
                               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                           }`}
                         >
@@ -458,7 +458,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
                             theme === 'dark'
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              ? 'text-gray-300 hover:bg-gray-900 hover:text-white'
                               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                           }`}
                         >
@@ -531,7 +531,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'prive' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    ? 'bg-gray-900 text-orange-400 shadow-lg shadow-orange-500/20' 
                     : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
                     ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
@@ -551,7 +551,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'groupe' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    ? 'bg-gray-900 text-orange-400 shadow-lg shadow-orange-500/20' 
                     : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
                     ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
@@ -571,7 +571,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               className={`group relative px-4 py-2 rounded-xl cursor-pointer transition-all duration-300 text-sm font-medium ml-auto flex items-center gap-2 ${
                 activeTab === 'contacts' 
                   ? theme === 'dark' 
-                    ? 'bg-gray-700 text-orange-400 shadow-lg shadow-orange-500/20' 
+                    ? 'bg-gray-900 text-orange-400 shadow-lg shadow-orange-500/20' 
                     : 'bg-gray-100 text-orange-500 shadow-lg shadow-orange-200/50'
                   : theme === 'dark' 
                     ? 'text-gray-400 hover:text-orange-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:shadow-lg hover:shadow-orange-500/20' 
@@ -655,7 +655,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
         {activeConversationId ? (
           <>
             {/* En-tête de la conversation */}
-            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} flex  items-center justify-between relative`}>
+            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-black' : 'bg-white'} flex  items-center justify-between relative`}>
               {(() => {
                 const conversation = conversations.find(c => c.id === activeConversationId);
                 
@@ -704,7 +704,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                         onClick={handleCloseConversation}
                         className={`p-2 rounded-lg transition-colors ${
                           theme === 'dark'
-                            ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            ? 'text-gray-400 hover:bg-gray-900 hover:text-white'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                         }`}
                         title="Fermer la conversation"

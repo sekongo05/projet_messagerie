@@ -32,7 +32,7 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave }: LeaveGr
   };
 
   const borderColor = theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200/50';
-  const cardBg = theme === 'dark' ? 'bg-gray-800/30 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm';
+  const cardBg = theme === 'dark' ? 'bg-gray-900/30 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm';
   
   // Design avec gradient orange/rouge esthétique
   const buttonBg = theme === 'dark' 

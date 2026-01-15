@@ -100,14 +100,14 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
 
   const bgGradient = theme === 'light' 
     ? 'bg-gradient-to-br from-blue-50 to-indigo-100' 
-    : 'bg-gradient-to-br from-gray-800 to-gray-900';
+    : 'bg-black';
   
-  const cardBg = theme === 'light' ? 'bg-white' : 'bg-gray-800';
+  const cardBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';
   const textPrimary = theme === 'light' ? 'text-gray-800' : 'text-white';
   const textSecondary = theme === 'light' ? 'text-gray-600' : 'text-gray-300';
   const labelColor = theme === 'light' ? 'text-gray-700' : 'text-gray-300';
-  const inputBg = theme === 'light' ? 'bg-white' : 'bg-gray-700';
-  const inputBorder = theme === 'light' ? 'border-gray-300' : 'border-gray-600';
+  const inputBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';
+  const inputBorder = theme === 'light' ? 'border-gray-300' : 'border-gray-800';
   const inputText = theme === 'light' ? 'text-gray-900' : 'text-white';
   const linkColor = theme === 'light' ? 'text-indigo-600 hover:text-indigo-700' : 'text-indigo-400 hover:text-indigo-300';
 
@@ -115,7 +115,7 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
     <div className={`min-h-screen flex items-center justify-center ${bgGradient} px-4`}>
       <div className={`max-w-md w-full ${cardBg} rounded-2xl shadow-xl p-8 transition-colors duration-300`}>
         {/* Message de bienvenue esthétique */}
-        <div className={`text-center mb-8 pb-6 border-b ${theme === 'light' ? 'border-gray-200' : 'border-gray-700'}`}>
+          <div className={`text-center mb-8 pb-6 border-b ${theme === 'light' ? 'border-gray-200' : 'border-gray-900'}`}>
           {/* Icône de chat avec animations automatiques */}
           <div className="flex justify-center mb-4">
             <div className={`relative inline-flex items-center justify-center w-24 h-24 rounded-full animate-float animate-glow ${

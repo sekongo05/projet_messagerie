@@ -60,7 +60,7 @@ export const ConversationList = ({
   }
 
   return (
-    <div className={`h-full overflow-y-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+    <div className={`h-full overflow-y-auto ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       {sortedConversations.map((conversation) => (
         <ConversationItem
           key={conversation.id}
