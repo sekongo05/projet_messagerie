@@ -132,7 +132,7 @@ export const ConversationItem = ({
             className="w-14 h-14 rounded-full object-cover"
           />
         ) : (
-          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${theme === 'dark' ? 'from-orange-500 to-orange-600' : 'from-orange-400 to-orange-500'} flex items-center justify-center text-white font-semibold text-xl`}>
+          <div className={`w-14 h-14 rounded-full border-4 border-orange-400 text-white bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-orange-600 font-semibold text-xl`}>
             {name.charAt(0).toUpperCase()}
           </div>
         )}

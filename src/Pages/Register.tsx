@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Theme } from '../mode';
+import { CreateUser } from '../Api/Usercreate.api';
 
 type RegisterProps = {
   onNavigateToLogin?: () => void;
@@ -18,32 +19,40 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
     setError('');
     setSuccess(false);
 
-    // TODO: Intégrer avec Auth.api.ts
-    // Exemple d'utilisation :
-    // import { register } from '../Api/Auth.api';
-    // try {
-    //   const response = await register({ nom, prenom, email });
-    //   // Gérer l'inscription réussie
-    //   setSuccess(true);
-    // } catch (err: any) {
-    //   setError(err.message || 'Une erreur est survenue lors de l\'inscription');
-    // }
+    try {
+      const response = await CreateUser(
+        email.trim(),
+        nom.trim(),
+        prenom.trim()
+      );
 
-    // Simulation pour démonstration
-    // Supprimez ce code une fois l'API intégrée
-    if (nom && prenom && email) {
-      setTimeout(() => {
-        // Sauvegarder les données utilisateur dans localStorage
-        const userData = {
-          id: Date.now(), // Générer un ID temporaire
-          nom: nom.trim(),
-          prenom: prenom.trim(),
-          email: email.trim(),
-        };
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        localStorage.setItem('userEmail', email.trim());
+      if (response.hasError) {
+        // Gérer les erreurs de l'API
+        const errorMessage = response.status?.message || "Une erreur est survenue lors de l'inscription";
+        setError(errorMessage);
+      } else {
+        // Inscription réussie
         setSuccess(true);
-      }, 500);
+        
+        // Sauvegarder les données utilisateur dans localStorage
+        if (response.items && response.items.length > 0) {
+          const userData = response.items[0];
+          localStorage.setItem('currentUser', JSON.stringify(userData));
+        }
+        localStorage.setItem('userEmail', email.trim());
+      }
+    } catch (err: any) {
+      // Gérer les erreurs réseau ou autres erreurs
+      let errorMessage = "Une erreur est survenue lors de l'inscription";
+      
+      if (err.response?.data?.status?.message) {
+        // Erreur retournée par l'API
+        errorMessage = err.response.data.status.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     }
   };
 

@@ -6,7 +6,20 @@ import Profile from './Pages/Profile';
 import { useTheme, ThemeToggle } from './mode';
 
 const App = () => {
-  const [page, setPage] = useState<'login' | 'register' | 'chat' | 'profile'>('login');
+  // Vérifier si l'utilisateur est connecté au chargement
+  const getInitialPage = (): 'login' | 'register' | 'chat' | 'profile' => {
+    const userEmail = localStorage.getItem('userEmail');
+    const userData = localStorage.getItem('userData');
+    const currentUser = localStorage.getItem('currentUser');
+    
+    // Si l'utilisateur est connecté, retourner 'chat'
+    if (userEmail || userData || currentUser) {
+      return 'chat';
+    }
+    return 'login';
+  };
+
+  const [page, setPage] = useState<'login' | 'register' | 'chat' | 'profile'>(getInitialPage);
   const { theme, toggleTheme } = useTheme();
 
   const getBackgroundColor = () => {

@@ -4,8 +4,7 @@ import { MessagesList } from '../Metier/Messages/MessagesList';
 import MessageInput from '../Metier/Messages/MessageInput';
 import { useTheme } from '../mode';
 import { FiLoader } from "react-icons/fi";
-import { CgProfile } from "react-icons/cg";
-import { CgExport } from "react-icons/cg";
+import { CgProfile, CgExport, CgLogOut } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
 import Prive from './Prive';
@@ -96,6 +95,17 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     setActiveConversationId(conversationId);
   };
 
+  // Gérer la déconnexion
+  const handleLogout = () => {
+    // Nettoyer localStorage
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('currentUser');
+    
+    // Recharger la page pour revenir au login
+    window.location.reload();
+  };
+
   // Gérer la fermeture d'une conversation
   const handleCloseConversation = () => {
     setActiveConversationId(null);
@@ -184,6 +194,17 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                   <CgProfile className='w-5 h-5' />
                 </button>
               )}
+              <button 
+                onClick={handleLogout} 
+                className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                title="Déconnexion"
+              >
+                <CgLogOut className='w-5 h-5' />
+              </button>
             </div>
           </div>
           
