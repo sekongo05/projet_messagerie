@@ -35,22 +35,24 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave }: LeaveGr
   const cardBg = theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50';
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
+  
+  // Nouveau design avec gradient orange/rouge
   const buttonBg = theme === 'dark' 
-    ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' 
-    : 'bg-red-500 hover:bg-red-600 active:bg-red-700';
-  const iconBg = theme === 'dark' ? 'bg-red-500/20' : 'bg-red-100';
+    ? 'bg-gradient-to-r from-orange-600/80 to-red-600/80 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 shadow-lg shadow-orange-500/20' 
+    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 shadow-lg shadow-orange-200/50';
+  const iconBg = theme === 'dark' ? 'bg-white/20' : 'bg-white/30';
 
   return (
     <div className={`${cardBg} rounded-xl p-4 border ${borderColor} transition-all hover:shadow-md`}>
       <button
         onClick={handleLeave}
         disabled={loading}
-        className={`w-full ${buttonBg} text-white px-4 py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+        className={`w-full ${buttonBg} text-white px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]`}
       >
-        <div className={`p-1.5 rounded-lg ${iconBg}`}>
-          <FiLogOut className="w-4 h-4" />
+        <div className={`p-2 rounded-lg ${iconBg} backdrop-blur-sm`}>
+          <FiLogOut className="w-5 h-5" />
         </div>
-        <span>{loading ? 'Traitement...' : 'Quitter le groupe'}</span>
+        <span className="text-base">{loading ? 'Traitement...' : 'Quitter le groupe'}</span>
       </button>
     </div>
   );

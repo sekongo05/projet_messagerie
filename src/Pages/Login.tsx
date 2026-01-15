@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Theme } from '../mode';
 import { login } from '../Api/Auth.api';
+import { FiCheckCircle, FiXCircle, FiAlertCircle, FiUserX } from 'react-icons/fi';
 
 type LoginProps = {
   onNavigateToRegister?: () => void;
@@ -25,11 +26,27 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
       
       if (response.hasError) {
         // Gérer les erreurs de l'API
-        const errorMessage = response.status?.message || 'Une erreur est survenue lors de la connexion';
+        const apiMessage = response.status?.message || '';
+        let errorMessage = 'Une erreur est survenue lors de la connexion';
+        
+        // Personnaliser le message selon le type d'erreur
+        if (apiMessage.toLowerCase().includes('introuvable') || apiMessage.toLowerCase().includes('not found') || apiMessage.toLowerCase().includes('utilisateur')) {
+          errorMessage = '✗ Aucun compte trouvé avec cet email. Veuillez vérifier votre adresse ou créer un compte.';
+        } else if (apiMessage.toLowerCase().includes('mot de passe') || apiMessage.toLowerCase().includes('password')) {
+          errorMessage = '✗ Mot de passe incorrect. Veuillez réessayer.';
+        } else if (apiMessage.toLowerCase().includes('email') || apiMessage.toLowerCase().includes('adresse')) {
+          errorMessage = '✗ Format d\'email invalide. Veuillez entrer une adresse email valide.';
+        } else if (apiMessage) {
+          errorMessage = `✗ ${apiMessage}`;
+        } else {
+          errorMessage = '✗ Erreur de connexion. Veuillez réessayer dans quelques instants.';
+        }
+        
         setError(errorMessage);
       } else {
-        // Connexion réussie
-        setSuccess('Connexion réussie !!');
+        // Connexion réussie - message personnalisé
+        const userName = response.items?.[0]?.prenoms || email.split('@')[0];
+        setSuccess(`✓ Bienvenue ${userName} ! Connexion réussie, redirection en cours...`);
         
         // Sauvegarder les données de l'utilisateur
         if (response.items && response.items.length > 0) {
@@ -38,24 +55,33 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
           localStorage.setItem('userData', JSON.stringify(userData));
         }
         
-        // Naviguer vers Chat après 1 seconde
+        // Naviguer vers Chat après 1.5 secondes pour laisser le temps de voir le message
         setTimeout(() => {
           if (onLoginSuccess) {
             onLoginSuccess();
           }
-        }, 1000);
+        }, 1500);
       }
     } catch (err: any) {
       // Gérer les erreurs réseau ou autres erreurs
-      let errorMessage = 'Une erreur est survenue lors de la connexion';
+      let errorMessage = '✗ Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
       
       if (err.response?.data?.status?.message) {
         // Erreur retournée par l'API
-        errorMessage = err.response.data.status.message;
+        const apiMessage = err.response.data.status.message;
+        if (apiMessage.toLowerCase().includes('introuvable') || apiMessage.toLowerCase().includes('not found')) {
+          errorMessage = '✗ Utilisateur introuvable. Vérifiez votre email ou créez un compte.';
+        } else {
+          errorMessage = `✗ ${apiMessage}`;
+        }
       } else if (err.response?.status === 404) {
-        errorMessage = "Utilisateur Introuvable";
+        errorMessage = "✗ Aucun compte trouvé avec cet email. Souhaitez-vous créer un compte ?";
+      } else if (err.response?.status === 500) {
+        errorMessage = '✗ Erreur serveur. Veuillez réessayer dans quelques instants.';
+      } else if (err.code === 'NETWORK_ERROR' || err.message?.includes('Network')) {
+        errorMessage = '✗ Problème de connexion. Vérifiez votre connexion internet.';
       } else if (err.message) {
-        errorMessage = err.message;
+        errorMessage = `✗ ${err.message}`;
       }
       
       setError(errorMessage);
@@ -126,23 +152,17 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
               ? 'bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent' 
               : 'text-orange-400'
           }`}>
-            Bienvenue !
+            👋 Bienvenue !
           </h1>
           
-          {/* Sous-titre */}
-          <p className={`${textSecondary} text-lg font-medium mb-2`}>
-            Rejoignez vos conversations
-          </p>
+          
           <p className={`${textSecondary} text-sm`}>
             Connectez-vous pour accéder à votre messagerie
           </p>
         </div>
 
-        {/* Section connexion */}
-        <div className="text-center mb-6">
-          <h2 className={`text-xl font-semibold ${textPrimary} mb-1`}>Connexion</h2>
-          <p className={`${textSecondary} text-sm`}>Entrez votre email pour continuer</p>
-        </div>
+       
+        
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -162,14 +182,20 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
           </div>
 
           {error && (
-            <div className={`${theme === 'light' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-red-900/30 border-red-700 text-red-300'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
-              {error}
+            <div className={`${theme === 'light' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-red-900/40 border-red-600 text-red-200'} border-2 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium shadow-md animate-slide-down transition-all`}>
+              <div className={`flex-shrink-0 ${theme === 'light' ? 'text-red-600' : 'text-red-400'}`}>
+                <FiXCircle className="w-5 h-5" />
+              </div>
+              <p className="flex-1">{error.replace('✗ ', '')}</p>
             </div>
           )}
 
           {success && (
-            <div className={`${theme === 'light' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-green-900/30 border-green-700 text-green-300'} border px-4 py-3 flex justify-center items-center rounded-lg text-sm`}>
-              {success}
+            <div className={`${theme === 'light' ? 'bg-green-50 border-green-300 text-green-800' : 'bg-green-900/40 border-green-600 text-green-200'} border-2 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium shadow-md animate-slide-down transition-all`}>
+              <div className={`flex-shrink-0 ${theme === 'light' ? 'text-green-600' : 'text-green-400'} animate-pulse`}>
+                <FiCheckCircle className="w-5 h-5" />
+              </div>
+              <p className="flex-1">{success.replace('✓ ', '')}</p>
             </div>
           )}
 

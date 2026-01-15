@@ -3,8 +3,8 @@ import { ConversationList } from '../Metier/Conversation/ConversationList';
 import { MessagesList } from '../Metier/Messages/MessagesList';
 import MessageInput from '../Metier/Messages/MessageInput';
 import { useTheme } from '../mode';
-import { FiLoader } from "react-icons/fi";
-import { CgProfile, CgExport, CgLogOut, CgAdd } from "react-icons/cg";
+import { FiLoader, FiUsers } from "react-icons/fi";
+import { CgProfile, CgExport, CgLogOut, CgAdd, CgComment, CgUserList } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
 import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
@@ -497,14 +497,19 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               {onNavigateToProfile && (
                 <button 
                   onClick={onNavigateToProfile} 
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`group relative p-2 rounded-xl transition-all duration-300 ${
                     theme === 'dark' 
-                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
+                      : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
                   }`}
                   title="Voir mon profil"
                 >
-                  <CgProfile className='w-5 h-5' />
+                  <div className={`absolute inset-0 rounded-xl ${
+                    theme === 'dark' 
+                      ? 'bg-gradient-to-br from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10' 
+                      : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
+                  } transition-all duration-300`} />
+                  <CgProfile className='w-5 h-5 relative z-10 transform group-hover:scale-110 transition-transform duration-300' />
                 </button>
               )}
               <button 
@@ -524,7 +529,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           {/* Onglets style WhatsApp */}
           <div className='flex items-center gap-1'>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'prive' 
                   ? theme === 'dark' 
                     ? 'bg-gray-700 text-orange-400' 
@@ -535,10 +540,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               }`}
               onClick={() => setActiveTab('prive')}
             >
-              Privé
+              <CgComment className="w-4 h-4" />
+              <span>Privé</span>
             </div>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2 ${
                 activeTab === 'groupe' 
                   ? theme === 'dark' 
                     ? 'bg-gray-700 text-orange-400' 
@@ -549,10 +555,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               }`}
               onClick={() => setActiveTab('groupe')}
             >
-              Groupe
+              <FiUsers className="w-4 h-4" />
+              <span>Groupe</span>
             </div>
             <div 
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ml-auto ${
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-medium ml-auto flex items-center gap-2 group relative ${
                 activeTab === 'contacts' 
                   ? theme === 'dark' 
                     ? 'bg-gray-700 text-orange-400' 
@@ -563,7 +570,27 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               }`}
               onClick={() => setActiveTab('contacts')}
             >
-              Contacts
+              <div className={`relative ${
+                activeTab === 'contacts'
+                  ? theme === 'dark'
+                    ? 'text-orange-400'
+                    : 'text-orange-500'
+                  : theme === 'dark'
+                    ? 'text-gray-400 group-hover:text-gray-300'
+                    : 'text-gray-600 group-hover:text-orange-500'
+              } transition-all duration-300`}>
+                <div className={`absolute inset-0 rounded-full ${
+                  activeTab === 'contacts'
+                    ? theme === 'dark'
+                      ? 'bg-orange-500/20 blur-sm'
+                      : 'bg-orange-400/20 blur-sm'
+                    : theme === 'dark'
+                      ? 'bg-gray-500/0 group-hover:bg-gray-500/10 blur-sm'
+                      : 'bg-orange-200/0 group-hover:bg-orange-200/30 blur-sm'
+                } transition-all duration-300`} />
+                <CgUserList className="w-4 h-4 relative transform group-hover:scale-110 transition-transform duration-300" />
+              </div>
+              <span>Contacts</span>
             </div>
           </div>
         </div>
