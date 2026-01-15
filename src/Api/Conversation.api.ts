@@ -19,7 +19,8 @@ export const getConversations = async () => {
       isSimpleLoading: false,
       data: {}
     });
-    
+        console.log("data de conversation "+ response.data)
+
     return response.data;
   } catch (error) {
     console.error('Erreur récupération conversations', error);

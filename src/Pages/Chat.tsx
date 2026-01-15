@@ -10,6 +10,7 @@ import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, typ
 import Prive from './Prive';
 import Groupes from './Groupes';
 import UserPage from './user';
+import InfoGroupe from './InfoGroupe';
 
 
 type ChatProps = {
@@ -111,6 +112,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     setActiveConversationId(null);
     setMessages([]);
   };
+
 
   // Gérer l'envoi d'un message
   const handleSendMessage = async (formData: FormData) => {
@@ -305,9 +307,13 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 // Récupérer le nom de l'interlocuteur (pas celui de l'utilisateur connecté)
                 // Pour les conversations privées, on doit déterminer qui est l'interlocuteur
                 let interlocutorName = '';
+                let isGroupConversation = false;
                 
                 if (conversation) {
                   const conv = conversation as any;
+                  
+                  // Vérifier si c'est une conversation de groupe
+                  isGroupConversation = conv.typeConversationCode === 'GROUP' || conv.typeConversation === 'GROUP';
                   
                   // Si on a recipientFullName et senderFullName, déterminer lequel est l'interlocuteur
                   // Pour l'instant, on utilise le titre qui contient généralement le nom de l'interlocuteur
@@ -332,7 +338,13 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                       {interlocutorName || 'Conversation'}
                     </h3>
                     <div className="flex  items-center gap-2">
-                      
+                      {/* Icône info pour les conversations de groupe */}
+                      {isGroupConversation && conversation && (
+                        <InfoGroupe 
+                          conversation={conversation}
+                          theme={theme}
+                        />
+                      )}
                       <button
                         onClick={handleCloseConversation}
                         className={`p-2 rounded-lg transition-colors ${
