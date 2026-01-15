@@ -264,6 +264,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           <>
             {activeTab === 'prive' && (
               <Prive
+                conversations={conversations}
                 onConversationSelect={handleConversationSelect}
                 activeConversationId={activeConversationId || undefined}
                 theme={theme}
@@ -271,6 +272,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
             )}
             {activeTab === 'groupe' && (
               <Groupes
+                conversations={conversations}
                 onConversationSelect={handleConversationSelect}
                 activeConversationId={activeConversationId || undefined}
                 theme={theme}
