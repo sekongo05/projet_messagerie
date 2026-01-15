@@ -13,6 +13,7 @@ import Prive from './Prive';
 import Groupes from './Groupes';
 import UserPage from './user';
 import InfoGroupe from './InfoGroupe';
+import CreateGroupe from './CreateGroupe';
 
 
 type ChatProps = {
@@ -27,6 +28,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showCreateGroupe, setShowCreateGroupe] = useState(false);
 
   // Récupérer l'ID de l'utilisateur connecté depuis localStorage
   const getCurrentUserId = (): number | null => {
@@ -399,8 +401,12 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               <div className="relative">
                 <button 
                   onClick={() => setShowAddMenu(!showAddMenu)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark' 
+                  className={`p-2 rounded-lg transition-all ${
+                    showAddMenu
+                      ? theme === 'dark'
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                      : theme === 'dark' 
                       ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
@@ -409,7 +415,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                   <CgAdd className='w-5 h-5' />
                 </button>
                 
-                {/* Menu déroulant */}
+                {/* Menu déroulant stylisé */}
                 {showAddMenu && (
                   <>
                     <div 
@@ -417,36 +423,60 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                       onClick={() => setShowAddMenu(false)}
                     />
                     <div 
-                      className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50 ${
-                        theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                      className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-down ${
+                        theme === 'dark' 
+                          ? 'bg-gray-800 border border-gray-700' 
+                          : 'bg-white border border-gray-200 shadow-gray-200'
                       }`}
+                      style={{
+                        animation: 'slideDown 0.2s ease-out'
+                      }}
                     >
-                      <div className="py-1">
+                      <div className="py-2">
                         <button
                           onClick={() => {
                             setActiveTab('contacts');
                             setShowAddMenu(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          className={`w-full text-left px-4 py-3 text-sm font-medium transition-all flex items-center gap-3 group ${
                             theme === 'dark'
-                              ? 'text-gray-300 hover:bg-gray-700'
-                              : 'text-gray-700 hover:bg-gray-100'
+                              ? 'text-gray-200 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
                           }`}
                         >
-                          Nouvelle discussion
+                          <div className={`p-1.5 rounded-lg transition-colors ${
+                            theme === 'dark'
+                              ? 'bg-gray-700/50 group-hover:bg-orange-500/20'
+                              : 'bg-gray-100 group-hover:bg-orange-100'
+                          }`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                          </div>
+                          <span>Nouvelle discussion</span>
                         </button>
+                        <div className={`h-px my-1 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`} />
                         <button
                           onClick={() => {
-                            // TODO: Implémenter la création de groupe
+                            setShowCreateGroupe(true);
                             setShowAddMenu(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          className={`w-full text-left px-4 py-3 text-sm font-medium transition-all flex items-center gap-3 group ${
                             theme === 'dark'
-                              ? 'text-gray-300 hover:bg-gray-700'
-                              : 'text-gray-700 hover:bg-gray-100'
+                              ? 'text-gray-200 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'
                           }`}
                         >
-                          Nouveau groupe
+                          <div className={`p-1.5 rounded-lg transition-colors ${
+                            theme === 'dark'
+                              ? 'bg-gray-700/50 group-hover:bg-orange-500/20'
+                              : 'bg-gray-100 group-hover:bg-orange-100'
+                          }`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                          <span>Nouveau groupe</span>
                         </button>
                       </div>
                     </div>
@@ -715,6 +745,22 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           </div>
         )}
       </div>
+
+      {/* Modal de création de groupe */}
+      {showCreateGroupe && (
+        <CreateGroupe
+          currentUserId={currentUserId}
+          onClose={() => setShowCreateGroupe(false)}
+          onSuccess={async (conversationId) => {
+            // Recharger les conversations
+            await loadConversations();
+            // Ouvrir la nouvelle conversation de groupe
+            setActiveConversationId(conversationId);
+            setActiveTab('groupe');
+          }}
+          theme={theme}
+        />
+      )}
     </div>
   );
 };

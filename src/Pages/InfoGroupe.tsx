@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CgInfo } from "react-icons/cg";
 import { useTheme } from '../mode';
 import type { Conversation } from '../Api/Conversation.api';
@@ -131,6 +131,18 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   const conv = conversation as any;
   const titre = conv.titre || 'Groupe sans nom';
   const createdAt = conv.createdAt || conv.dateCreation || null;
+
+  // Trier les participants : admins en premier, puis membres
+  const sortedParticipants = useMemo(() => {
+    return [...participants].sort((a, b) => {
+      // Si a est admin et b ne l'est pas, a vient en premier
+      if (a.isAdmin && !b.isAdmin) return -1;
+      // Si b est admin et a ne l'est pas, b vient en premier
+      if (!a.isAdmin && b.isAdmin) return 1;
+      // Sinon, garder l'ordre initial (ou trier par nom si souhaité)
+      return 0;
+    });
+  }, [participants]);
 
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
   const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
@@ -271,7 +283,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className={`text-xs font-semibold uppercase tracking-wide ${textSecondary} mb-2`}>
-                        Participants ({loadingParticipants ? '...' : participants.length})
+                        Participants ({loadingParticipants ? '...' : sortedParticipants.length})
                       </h3>
                     </div>
                   </div>
@@ -280,9 +292,9 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     <div className="text-center py-4">
                       <p className={textSecondary}>Chargement des participants...</p>
                     </div>
-                  ) : participants.length > 0 ? (
+                  ) : sortedParticipants.length > 0 ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {participants.map((participant) => (
+                      {sortedParticipants.map((participant) => (
                         <div 
                           key={participant.id} 
                           className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-600/30' : 'bg-white'} border ${borderColor}`}
