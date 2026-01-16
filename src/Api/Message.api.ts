@@ -104,24 +104,53 @@ export const getMessagesByConversation = async (
 
   return (response.data.items || []).map((item) => {
     // Normaliser l'URL de l'image si elle existe
-    let imageUrl = item.messageImgUrl  || null;
+    // Vérifier plusieurs champs possibles pour l'URL de l'image
+    let imageUrl = item.messageImgUrl || (item as any).imgUrl || (item as any).imageUrl || (item as any).fileUrl || (item as any).messageImg || null;
     
-    // Si l'URL existe et n'est pas déjà une URL complète
-    if (imageUrl) {
-      // Si l'URL commence par /files, elle est déjà correcte (sera proxy par Vite)
-      if (imageUrl.startsWith('/files')) {
-        // Garder tel quel, le proxy Vite s'en chargera
-      } 
-      // Si l'URL est relative mais ne commence pas par /, ajouter /
-      else if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = `/${imageUrl}`;
+    // Si l'URL est une chaîne vide ou "null", la mettre à null
+    if (imageUrl === '' || imageUrl === 'null' || imageUrl === null || imageUrl === undefined) {
+      imageUrl = null;
+    } else if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+      const trimmedUrl = imageUrl.trim();
+      
+      // Si l'URL commence par http:// ou https://, la garder telle quelle
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        imageUrl = trimmedUrl;
       }
-      // Si l'URL commence par http, la garder telle quelle
+      // Si l'URL commence par /files, elle est déjà correcte (sera proxy par Vite)
+      else if (trimmedUrl.startsWith('/files')) {
+        imageUrl = trimmedUrl;
+      }
+      // Si l'URL contient "images/" ou se termine par une extension d'image
+      else if (trimmedUrl.includes('images/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(trimmedUrl)) {
+        // Si elle ne commence pas par /, ajouter /files/
+        if (!trimmedUrl.startsWith('/')) {
+          imageUrl = `/files/${trimmedUrl}`;
+        } else if (!trimmedUrl.startsWith('/files')) {
+          // Si elle commence par / mais pas /files, ajouter /files
+          imageUrl = `/files${trimmedUrl}`;
+        } else {
+          imageUrl = trimmedUrl;
+        }
+      }
+      // Autres cas : ajouter / si nécessaire
+      else if (!trimmedUrl.startsWith('/')) {
+        imageUrl = `/${trimmedUrl}`;
+      } else {
+        imageUrl = trimmedUrl;
+      }
+    } else {
+      imageUrl = null;
     }
     
     // Debug: logger les messages avec images
     if (imageUrl) {
-      console.log('Message avec image trouvé:', { id: item.id, messageImgUrl: imageUrl, item });
+      console.log('Message avec image trouvé:', { 
+        id: item.id, 
+        messageImgUrl: imageUrl, 
+        originalUrl: item.messageImgUrl,
+        normalized: imageUrl !== item.messageImgUrl
+      });
     }
     
     return {
@@ -235,21 +264,53 @@ export const uploadImageMessage = async (
     console.log('Réponse uploadImageMessage complète:', { response, created });
 
     // Normaliser l'URL de l'image si elle existe - vérifier plusieurs champs possibles
-    let imageUrl = created.messageImgUrl || created.imgUrl || created.imageUrl || created.fileUrl || created.messageImg || null;
+    let imageUrl = created.messageImgUrl || (created as any).imgUrl || (created as any).imageUrl || (created as any).fileUrl || (created as any).messageImg || null;
     
     // Si l'URL est une chaîne vide ou "null", la mettre à null
-    if (imageUrl === '' || imageUrl === 'null' || imageUrl === null) {
+    if (imageUrl === '' || imageUrl === 'null' || imageUrl === null || imageUrl === undefined) {
       imageUrl = null;
-    } else {
-      // Si l'URL est relative, la convertir en URL absolue
-      if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = `/${imageUrl}`;
+    } else if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+      const trimmedUrl = imageUrl.trim();
+      
+      // Si l'URL commence par http:// ou https://, la garder telle quelle
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        imageUrl = trimmedUrl;
       }
+      // Si l'URL commence par /files, elle est déjà correcte
+      else if (trimmedUrl.startsWith('/files')) {
+        imageUrl = trimmedUrl;
+      }
+      // Si l'URL contient "images/" ou se termine par une extension d'image
+      else if (trimmedUrl.includes('images/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(trimmedUrl)) {
+        // Si elle ne commence pas par /, ajouter /files/
+        if (!trimmedUrl.startsWith('/')) {
+          imageUrl = `/files/${trimmedUrl}`;
+        } else if (!trimmedUrl.startsWith('/files')) {
+          // Si elle commence par / mais pas /files, ajouter /files
+          imageUrl = `/files${trimmedUrl}`;
+        } else {
+          imageUrl = trimmedUrl;
+        }
+      }
+      // Autres cas : ajouter / si nécessaire
+      else if (!trimmedUrl.startsWith('/')) {
+        imageUrl = `/${trimmedUrl}`;
+      } else {
+        imageUrl = trimmedUrl;
+      }
+    } else {
+      imageUrl = null;
     }
     
     // Debug: logger le message créé avec image
     if (imageUrl) {
-      console.log('Message image créé avec URL:', { id: created.id, messageImgUrl: imageUrl, originalCreated: created });
+      console.log('Message image créé avec URL:', { 
+        id: created.id, 
+        messageImgUrl: imageUrl, 
+        originalUrl: created.messageImgUrl,
+        normalized: imageUrl !== created.messageImgUrl,
+        originalCreated: created 
+      });
     } else {
       console.warn('Aucune URL d\'image trouvée dans le message créé:', created);
     }

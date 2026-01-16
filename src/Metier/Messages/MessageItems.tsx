@@ -115,9 +115,9 @@ export const MessageItem = ({
         {/* Bulle de message style WhatsApp */}
         <div
           className={`relative rounded-2xl ${
-            message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && !message.content
+            message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && !message.content
               ? 'p-0' // Pas de padding pour les images seules
-              : message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.content
+              : message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && message.content
               ? 'p-0' // Pas de padding pour les messages mixtes, on gère le padding dans les éléments
               : 'px-3 py-1.5' // Padding normal pour texte seul
           } ${
@@ -140,7 +140,7 @@ export const MessageItem = ({
             onDelete={handleDelete}
           />
           {/* Image - Format moyen style WhatsApp */}
-          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && (
+          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && (
             <div className={`relative group/image overflow-hidden ${
               message.content ? 'rounded-t-lg' : 'rounded-lg'
             } ${
@@ -158,15 +158,24 @@ export const MessageItem = ({
                 alt="Message"
                 loading="lazy"
                 onError={(e) => {
-                  console.error('Erreur de chargement de l\'image:', message.messageImgUrl);
-                  console.error('Type d\'erreur:', e);
-                  // Afficher un placeholder au lieu de cacher complètement
                   const img = e.target as HTMLImageElement;
-                  img.style.display = 'block';
-                  img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                  console.error('Erreur de chargement de l\'image:', {
+                    url: message.messageImgUrl,
+                    currentSrc: img?.currentSrc,
+                    src: img?.src,
+                    messageId: message.id
+                  });
+                  // Afficher un placeholder au lieu de cacher complètement
+                  if (img && !img.src.includes('data:image/svg')) {
+                    img.style.display = 'block';
+                    img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                  }
                 }}
                 onLoad={() => {
-                  console.log('Image chargée avec succès:', message.messageImgUrl);
+                  console.log('Image chargée avec succès:', {
+                    url: message.messageImgUrl,
+                    messageId: message.id
+                  });
                 }}
                 className="max-w-[250px] max-h-[300px] w-full h-auto object-cover cursor-pointer hover:opacity-95 transition-opacity"
                 style={{ 
@@ -176,7 +185,9 @@ export const MessageItem = ({
                   width: '100%',
                   height: 'auto',
                   maxWidth: '250px',
-                  maxHeight: '300px'
+                  maxHeight: '300px',
+                  minWidth: '150px',
+                  minHeight: '150px'
                 }}
               />
               {/* Timestamp pour les images seules (affiché en overlay en bas à droite) */}
@@ -197,13 +208,13 @@ export const MessageItem = ({
           {/* Contenu texte - Affiché après l'image si elle existe */}
           {message.content && (
             <div className={`flex items-end gap-2 ${
-              message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' 
+              message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null
                 ? 'px-3 pt-2 pb-1' // Padding pour messages mixtes
                 : '' // Pas de padding supplémentaire pour texte seul (déjà dans la bulle)
             }`}>
               <p className="break-words text-sm leading-relaxed flex-1">{message.content}</p>
               {/* Timestamp à côté du texte (affiché seulement si pas d'image, sinon affiché en bas) */}
-              {time && (!message.messageImgUrl || message.messageImgUrl === 'null' || message.messageImgUrl === '') && (
+              {time && (!message.messageImgUrl || message.messageImgUrl === 'null' || message.messageImgUrl === '' || message.messageImgUrl === null) && (
                 <span
                   className={`text-[11px] leading-none shrink-0 ${
                     isOwnMessage
@@ -220,7 +231,7 @@ export const MessageItem = ({
           )}
           
           {/* Timestamp global en bas pour messages avec image + texte */}
-          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.content && time && (
+          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && message.content && time && (
             <div className="flex items-end justify-end gap-1 px-3 pb-1.5">
               <span
                 className={`text-[11px] leading-none ${
