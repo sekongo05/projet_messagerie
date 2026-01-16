@@ -104,7 +104,7 @@ export const getMessagesByConversation = async (
 
   return (response.data.items || []).map((item) => {
     // Normaliser l'URL de l'image si elle existe
-    let imageUrl = item.messageImgUrl || item.imgUrl || item.imageUrl || item.fileUrl || null;
+    let imageUrl = item.messageImgUrl  || null;
     
     // Si l'URL existe et n'est pas déjà une URL complète
     if (imageUrl) {
