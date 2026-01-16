@@ -6,6 +6,7 @@ type MessagesListProps = {
   messages: Message[];
   currentUserId: number;
   theme?: 'light' | 'dark';
+  isGroupConversation?: boolean;
 };
 
 const formatDayLabel = (isoDate: string) => {
@@ -28,6 +29,7 @@ export const MessagesList = ({
   messages,
   currentUserId,
   theme = 'light',
+  isGroupConversation = false,
 }: MessagesListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +80,12 @@ export const MessagesList = ({
                   </span>
                 </div>
               )}
-              <MessageItem message={message} currentUserId={currentUserId} theme={theme} />
+              <MessageItem 
+                message={message} 
+                currentUserId={currentUserId} 
+                theme={theme} 
+                isGroupConversation={isGroupConversation}
+              />
             </div>
           );
         })}

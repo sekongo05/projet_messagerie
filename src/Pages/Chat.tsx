@@ -6,9 +6,10 @@ import { useTheme } from '../mode';
 import { FiLoader, FiUsers } from "react-icons/fi";
 import { CgProfile, CgExport, CgLogOut, CgAdd, CgComment, CgUserList } from "react-icons/cg";
 import { getConversations, type Conversation } from '../Api/Conversation.api';
-import { getMessagesByConversation, getLastMessageFromMessages, sendMessage, type Message } from '../Api/Message.api';
+import { getMessagesByConversation, getLastMessageFromMessages, sendTextMessage, uploadImageMessage, type Message } from '../Api/Message.api';
 import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
 import { createConversation } from '../Api/ConversationCreate.api';
+import { getUsers, type User } from '../Api/User.api';
 import Prive from './Prive';
 import Groupes from './Groupes';
 import UserPage from './user';
@@ -120,6 +121,206 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     return filteredConversations;
   };
 
+  // Enrichir les messages avec les noms des créateurs
+  const enrichMessagesWithCreatorNames = async (
+    messages: Message[],
+    currentUserId: number
+  ): Promise<Message[]> => {
+    if (!messages || messages.length === 0) {
+      return messages;
+    }
+
+    try {
+      // 1. Récupérer tous les utilisateurs et créer un Map pour recherche rapide
+      const usersResponse: any = await getUsers(currentUserId);
+      let usersList: User[] = [];
+      
+      if (Array.isArray(usersResponse)) {
+        usersList = usersResponse;
+      } else if (usersResponse?.items) {
+        usersList = usersResponse.items;
+      } else if (usersResponse?.data?.items) {
+        usersList = usersResponse.data.items;
+      } else if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+        usersList = usersResponse.data;
+      }
+
+      // Créer un Map pour recherche rapide par ID
+      const usersMap = new Map<number, User>();
+      usersList.forEach((user) => {
+        if (user.id) {
+          usersMap.set(user.id, user);
+        }
+      });
+
+      console.log(`Cache d'utilisateurs créé pour enrichissement des messages: ${usersMap.size} utilisateurs`);
+
+      // 2. Enrichir chaque message avec le nom du créateur
+      const enrichedMessages = messages.map((message) => {
+        if (!message.createdBy) {
+          return message;
+        }
+
+        const creator = usersMap.get(message.createdBy);
+
+        if (!creator) {
+          console.warn(`Utilisateur ${message.createdBy} non trouvé dans le cache pour le message ${message.id}`);
+          // Si senderName existe déjà, le garder, sinon utiliser un fallback
+          if (!message.senderName) {
+            return {
+              ...message,
+              senderName: `Utilisateur ${message.createdBy}`,
+            };
+          }
+          return message;
+        }
+
+        // Construire le nom du créateur
+        let creatorName = '';
+        if (creator.prenoms && creator.nom) {
+          creatorName = `${creator.prenoms} ${creator.nom}`;
+        } else if (creator.prenoms) {
+          creatorName = creator.prenoms;
+        } else if (creator.nom) {
+          creatorName = creator.nom;
+        } else {
+          creatorName = `Utilisateur ${message.createdBy}`;
+        }
+
+        // Retourner le message avec le senderName mis à jour
+        return {
+          ...message,
+          senderName: creatorName,
+        };
+      });
+
+      return enrichedMessages;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs pour enrichissement des messages:', error);
+      // En cas d'erreur, retourner les messages sans modification
+      return messages;
+    }
+  };
+
+  // Enrichir les conversations privées avec le nom de l'interlocuteur
+  const enrichPrivateConversationsWithInterlocutorNames = async (
+    conversations: Conversation[],
+    currentUserId: number
+  ): Promise<Conversation[]> => {
+    if (!currentUserId || conversations.length === 0) {
+      return conversations;
+    }
+
+    try {
+      // 1. Récupérer tous les utilisateurs et créer un Map pour recherche rapide
+      const usersResponse: any = await getUsers(currentUserId);
+      let usersList: User[] = [];
+      
+      if (Array.isArray(usersResponse)) {
+        usersList = usersResponse;
+      } else if (usersResponse?.items) {
+        usersList = usersResponse.items;
+      } else if (usersResponse?.data?.items) {
+        usersList = usersResponse.data.items;
+      } else if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+        usersList = usersResponse.data;
+      }
+
+      // Créer un Map pour recherche rapide par ID
+      const usersMap = new Map<number, User>();
+      usersList.forEach((user) => {
+        if (user.id) {
+          usersMap.set(user.id, user);
+        }
+      });
+
+      console.log(`Cache d'utilisateurs créé: ${usersMap.size} utilisateurs`);
+
+      // 2. Enrichir chaque conversation privée
+      const enrichedConversations = await Promise.all(
+        conversations.map(async (conversation) => {
+          const convAny = conversation as any;
+          
+          // Vérifier si c'est une conversation privée
+          const isPrivate = convAny.typeConversationCode === 'PRIVEE' || 
+                           convAny.typeConversation === 'PRIVEE' ||
+                           convAny.typeConversationCode === 'PRIVATE' ||
+                           convAny.typeConversation === 'PRIVATE';
+
+          // Si ce n'est pas une conversation privée, retourner sans modification
+          if (!isPrivate) {
+            return conversation;
+          }
+
+          try {
+            // Récupérer les participants de la conversation
+            const participantsResponse: any = await getParticipantsByConversationId(conversation.id);
+            
+            let participantsList: any[] = [];
+            if (Array.isArray(participantsResponse)) {
+              participantsList = participantsResponse;
+            } else if (participantsResponse?.items) {
+              participantsList = participantsResponse.items;
+            } else if (participantsResponse?.data?.items) {
+              participantsList = participantsResponse.data.items;
+            } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+              participantsList = participantsResponse.data;
+            }
+
+            // Identifier l'interlocuteur (celui qui n'est pas currentUserId)
+            const interlocutorParticipant = participantsList.find(
+              (participant: any) => participant.userId !== currentUserId
+            );
+
+            if (!interlocutorParticipant || !interlocutorParticipant.userId) {
+              console.warn(`Aucun interlocuteur trouvé pour la conversation ${conversation.id}`);
+              return conversation;
+            }
+
+            const interlocutorId = interlocutorParticipant.userId;
+            const interlocutor = usersMap.get(interlocutorId);
+
+            if (!interlocutor) {
+              console.warn(`Utilisateur ${interlocutorId} non trouvé dans le cache`);
+              return {
+                ...conversation,
+                titre: `Utilisateur ${interlocutorId}`,
+              };
+            }
+
+            // Construire le nom de l'interlocuteur
+            let interlocutorName = '';
+            if (interlocutor.prenoms && interlocutor.nom) {
+              interlocutorName = `${interlocutor.prenoms} ${interlocutor.nom}`;
+            } else if (interlocutor.prenoms) {
+              interlocutorName = interlocutor.prenoms;
+            } else if (interlocutor.nom) {
+              interlocutorName = interlocutor.nom;
+            } else {
+              interlocutorName = `Utilisateur ${interlocutorId}`;
+            }
+
+            // Retourner la conversation avec le titre mis à jour
+            return {
+              ...conversation,
+              titre: interlocutorName,
+            };
+          } catch (error) {
+            console.error(`Erreur lors de l'enrichissement de la conversation ${conversation.id}:`, error);
+            // En cas d'erreur, retourner la conversation sans modification
+            return conversation;
+          }
+        })
+      );
+
+      return enrichedConversations;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs:', error);
+      // En cas d'erreur, retourner les conversations sans modification
+      return conversations;
+    }
+  };
+
   const loadConversations = async () => {
     setLoading(true);
     try {
@@ -140,7 +341,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       const filteredConversations = await filterConversationsByParticipant(allConversations, userId);
       console.log("Conversations filtrées (où l'utilisateur est participant):", filteredConversations.length);
       
-      setConversations(filteredConversations);
+      // Enrichir les conversations privées avec le nom de l'interlocuteur
+      const enrichedConversations = await enrichPrivateConversationsWithInterlocutorNames(filteredConversations, userId);
+      console.log("Conversations enrichies avec les noms des interlocuteurs:", enrichedConversations.length);
+      
+      setConversations(enrichedConversations);
     } catch (error) {
       console.error('Erreur lors du chargement des conversations:', error);
       setConversations([]);
@@ -154,7 +359,18 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
 
     try {
       const messages = await getMessagesByConversation(conversationId, currentUserId);
-      setMessages(messages);
+      
+      // Debug: vérifier les messages avec images
+      const messagesWithImages = messages.filter(m => m.messageImgUrl);
+      if (messagesWithImages.length > 0) {
+        console.log('Messages avec images chargés:', messagesWithImages);
+      }
+      
+      // Enrichir les messages avec les noms des créateurs
+      const enrichedMessages = await enrichMessagesWithCreatorNames(messages, currentUserId);
+      console.log('Messages enrichis avec les noms des créateurs:', enrichedMessages.length);
+      
+      setMessages(enrichedMessages);
 
       // Mettre à jour le lastMessageTime de la conversation avec le timestamp du dernier message
       const lastMessage = getLastMessageFromMessages(messages);
@@ -342,29 +558,52 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const handleSendMessage = async (formData: FormData) => {
     if (!activeConversationId) return;
 
-    const content = formData.get("content");
+    const content = formData.get("content") as string | null;
+    const file = formData.get("file") as File | null;
 
-    if (!content || typeof content !== "string") {
-      console.error("Message vide");
+    // Vérifier qu'il y a au moins du contenu texte ou une image
+    if (!content?.trim() && !file) {
+      console.error("Message vide : aucun contenu texte ni image");
+      alert("Le message ne peut pas être vide. Ajoutez du texte ou une image.");
       return;
     }
 
     try {
-      const created = await sendMessage(
-        {
-          conversationId: activeConversationId,
-          content: content,
-        },
-        currentUserId
-      );
+      let created: Message;
+
+      // Si une image est présente, utiliser uploadImageMessage
+      if (file && file instanceof File) {
+        created = await uploadImageMessage(
+          {
+            conversationId: activeConversationId,
+            file: file,
+            content: content?.trim() || undefined, // Contenu optionnel pour messages mixtes
+          },
+          currentUserId
+        );
+      } else {
+        // Sinon, utiliser sendTextMessage pour texte seul
+        if (!content?.trim()) {
+          console.error("Message texte vide");
+          return;
+        }
+        created = await sendTextMessage(
+          {
+            conversationId: activeConversationId,
+            content: content.trim(),
+          },
+          currentUserId
+        );
+      }
 
       // Mettre à jour immédiatement la conversation dans la liste avec le nouveau message
+      const lastMessageText = content?.trim() || (file ? "📷 Image" : "");
       setConversations(prevConversations => 
         prevConversations.map(conv => {
           if (conv.id === activeConversationId) {
             return {
               ...conv,
-              lastMessage: content,
+              lastMessage: lastMessageText,
               // on prend le createdAt renvoyé par l'API (déjà normalisé ISO dans Message.api.ts)
               lastMessageTime: created.createdAt,
             };
@@ -378,8 +617,10 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       
       // Note: On ne recharge plus toutes les conversations car loadMessages 
       // met déjà à jour le lastMessageTime de la conversation active
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de l'envoi du message :", error);
+      const errorMessage = error.response?.data?.status?.message || error.message || "Erreur lors de l'envoi du message";
+      alert(`Erreur : ${errorMessage}`);
     }
   };
 
@@ -734,6 +975,13 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
               messages={messages}
               currentUserId={currentUserId}
               theme={theme}
+              isGroupConversation={(() => {
+                if (!activeConversationId) return false;
+                const conversation = conversations.find(c => c.id === activeConversationId);
+                if (!conversation) return false;
+                const conv = conversation as any;
+                return conv.typeConversationCode === 'GROUP' || conv.typeConversation === 'GROUP';
+              })()}
             />
 
             {/* Input pour envoyer un message */}
