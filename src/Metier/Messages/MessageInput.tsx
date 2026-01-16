@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type {ChangeEvent, FormEvent} from "react"
+import type {ChangeEvent, FormEvent} from "react";
+import { FiImage } from "react-icons/fi";
 
 interface MessageInputProps {
   conversationId: number;
@@ -91,8 +92,8 @@ const MessageInput = ({
       className={`flex items-center gap-2 p-3 border-t ${borderColor} ${bgColor}`}
     >
       {/* Input image */}
-      <label className={`cursor-pointer text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} hover:opacity-70 transition-opacity`}>
-        📎
+      <label className={`cursor-pointer ${theme === 'dark' ? 'text-gray-300 hover:text-orange-400' : 'text-gray-600 hover:text-orange-500'} transition-colors`}>
+        <FiImage className="w-6 h-6" />
         <input
           type="file"
           accept="image/*"
