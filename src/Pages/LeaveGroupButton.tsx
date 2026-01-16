@@ -1,31 +1,104 @@
 import { useState } from 'react';
 import { useTheme } from '../mode';
 import { FiLogOut } from 'react-icons/fi';
+import { deleteParticipant } from '../Api/deleteParticipant.api';
 
 type LeaveGroupButtonProps = {
   conversationId: number;
   theme?: 'light' | 'dark';
-  onLeave?: () => void; // Callback optionnel pour la logique future
+  onLeave?: () => void; // Callback optionnel appelé après succès
+  onError?: (errorMessage: string) => void; // Callback optionnel pour gérer les erreurs
 };
 
-const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave }: LeaveGroupButtonProps) => {
+const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }: LeaveGroupButtonProps) => {
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
   const [loading, setLoading] = useState(false);
 
+  // Récupérer l'ID de l'utilisateur connecté
+  const getCurrentUserId = (): number => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        if (parsed.id) return parsed.id;
+      }
+      
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const parsed = JSON.parse(currentUser);
+        if (parsed.id) return parsed.id;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
+    }
+    
+    return 1; // Fallback
+  };
+
   const handleLeave = async () => {
     if (loading) return;
     
+    // Confirmation avant de quitter
+    if (!window.confirm('Êtes-vous sûr de vouloir quitter ce groupe ?')) {
+      return;
+    }
+    
     setLoading(true);
+    
     try {
-      // TODO: Implémenter la logique pour quitter le groupe
-      // Appel API à venir
-      if (onLeave) {
-        onLeave();
+      const currentUserId = getCurrentUserId();
+      const response = await deleteParticipant(conversationId, currentUserId);
+      
+      if (response.hasError) {
+        // Gérer les erreurs de l'API
+        const apiMessage = response.status?.message || '';
+        let errorMessage = 'Une erreur est survenue lors de la sortie du groupe';
+        
+        // Personnaliser le message selon le type d'erreur
+        if (apiMessage.toLowerCase().includes('admin') || apiMessage.toLowerCase().includes('administrateur')) {
+          errorMessage = '✗ Les administrateurs ne peuvent pas quitter le groupe directement. Veuillez transférer les droits d\'administration d\'abord';
+        } else if (apiMessage.toLowerCase().includes('dernier') || apiMessage.toLowerCase().includes('last')) {
+          errorMessage = '✗ Impossible de quitter le groupe. Vous êtes le dernier membre. Supprimez le groupe à la place';
+        } else if (apiMessage.toLowerCase().includes('introuvable') || apiMessage.toLowerCase().includes('not found')) {
+          errorMessage = '✗ Participant introuvable. Vous avez peut-être déjà quitté le groupe';
+        } else if (apiMessage.toLowerCase().includes('permission') || apiMessage.toLowerCase().includes('autorisé')) {
+          errorMessage = '✗ Vous n\'avez pas la permission de quitter ce groupe';
+        } else if (apiMessage) {
+          errorMessage = `✗ ${apiMessage}`;
+        } else {
+          errorMessage = '✗ Erreur lors de la sortie du groupe. Veuillez réessayer';
+        }
+        
+        // Appeler le callback d'erreur si fourni, sinon afficher une alerte
+        if (onError) {
+          onError(errorMessage);
+        } else {
+          alert(errorMessage);
+        }
+      } else {
+        // Sortie réussie
+        if (onLeave) {
+          onLeave();
+        }
+        console.log('Groupe quitté avec succès:', conversationId);
       }
-      console.log('Quitter le groupe:', conversationId);
-    } catch (error) {
-      console.error('Erreur lors de la sortie du groupe:', error);
+    } catch (err: any) {
+      console.error('Erreur lors de la sortie du groupe:', err);
+      let errorMessage = '✗ Erreur de connexion. Vérifiez votre connexion internet et réessayez';
+      
+      if (err.response?.data?.status?.message) {
+        errorMessage = `✗ ${err.response.data.status.message}`;
+      } else if (err.message) {
+        errorMessage = `✗ ${err.message}`;
+      }
+      
+      // Appeler le callback d'erreur si fourni, sinon afficher une alerte
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

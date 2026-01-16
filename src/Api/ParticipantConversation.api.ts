@@ -36,3 +36,28 @@ export const getParticipantsByConversationId = async (
     throw error;
   }
 };
+
+export const deleteParticipant = async (
+  participantId: number,
+  userId: number = 1
+) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/participantConversation/delete`,
+      {
+        user: userId,
+        datas: [{ id: participantId }]
+      }
+    );
+
+    console.log("Participant supprimé :", response.data);
+    return response.data;
+
+  } catch (error) {
+    console.error(
+      'Erreur lors de la suppression du participant',
+      error
+    );
+    throw error;
+  }
+};

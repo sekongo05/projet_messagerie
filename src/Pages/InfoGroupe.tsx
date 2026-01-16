@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { CgInfo } from "react-icons/cg";
 import { useTheme } from '../mode';
 import type { Conversation } from '../Api/Conversation.api';
-import { FiCalendar, FiHash, FiUsers } from "react-icons/fi";
+import { FiCalendar, FiHash, FiUsers, FiLogOut } from "react-icons/fi";
 import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
+import { deleteParticipant } from '../Api/deleteParticipant.api';
 import LeaveGroupButton from './LeaveGroupButton';
 import AddParticipantButton from './AddParticipantButton';
+import RemoveParticipantButton from './RemoveParticipantButton';
 
 type InfoGroupeProps = {
   conversation: Conversation;
@@ -29,6 +31,11 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [participants, setParticipants] = useState<ParticipantUser[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [hoveredParticipantId, setHoveredParticipantId] = useState<number | null>(null);
+  const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>('');
+  const [deletingParticipantId, setDeletingParticipantId] = useState<number | null>(null);
+  const [leaveGroupError, setLeaveGroupError] = useState<string>('');
 
   const handleShowGroupeInfo = () => {
     setIsOpen(!isOpen);
@@ -38,15 +45,29 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
     setIsOpen(false);
   };
 
-  // Charger les participants quand le panneau est ouvert
-  useEffect(() => {
-    if (isOpen && conversation.id) {
-      loadParticipants(conversation.id);
+  // Récupérer l'ID de l'utilisateur connecté
+  const getCurrentUserId = useCallback((): number => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        if (parsed.id) return parsed.id;
+      }
+      
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const parsed = JSON.parse(currentUser);
+        if (parsed.id) return parsed.id;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
     }
-  }, [isOpen, conversation.id]);
+    
+    return 1; // Fallback
+  }, []);
 
   // Charger les participants d'une conversation
-  const loadParticipants = async (conversationId: number) => {
+  const loadParticipants = useCallback(async (conversationId: number) => {
     setLoadingParticipants(true);
     
     try {
@@ -119,6 +140,21 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
       console.log('Participants avec informations utilisateur:', participantsWithUserInfo);
       setParticipants(participantsWithUserInfo);
+
+      // Vérifier si l'utilisateur connecté est admin
+      const currentUserId = getCurrentUserId();
+      const currentUserParticipant = participantsWithUserInfo.find(
+        (p) => p.userId === currentUserId
+      );
+      if (currentUserParticipant) {
+        const isAdmin = currentUserParticipant.isAdmin === true || 
+                       currentUserParticipant.isAdmin === 1 || 
+                       currentUserParticipant.isAdmin === 'true';
+        setCurrentUserIsAdmin(isAdmin);
+      } else {
+        // Si l'utilisateur connecté n'est pas trouvé, réinitialiser le statut admin
+        setCurrentUserIsAdmin(false);
+      }
     } catch (err: any) {
       console.error('Erreur lors du chargement des participants:', err);
       console.error('Détails de l\'erreur:', err.response?.data || err.message);
@@ -126,12 +162,20 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
     } finally {
       setLoadingParticipants(false);
     }
-  };
+  }, [getCurrentUserId]);
+
+  // Charger les participants quand le panneau est ouvert
+  useEffect(() => {
+    if (isOpen && conversation.id) {
+      loadParticipants(conversation.id);
+    }
+  }, [isOpen, conversation.id, loadParticipants]);
 
   // Extraire les informations de la conversation
   const conv = conversation as any;
   const titre = conv.titre || 'Groupe sans nom';
   const createdAt = conv.createdAt || conv.dateCreation || null;
+
 
   // Trier les participants : admins en premier, puis membres
   const sortedParticipants = useMemo(() => {
@@ -144,6 +188,163 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
       return 0;
     });
   }, [participants]);
+
+  // Fonction pour supprimer un participant
+  const handleDeleteParticipant = useCallback(async (participantId: number, participantUserId: number) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir retirer ce participant du groupe ?')) {
+      return;
+    }
+
+    setDeleteError('');
+    setDeletingParticipantId(participantId);
+
+    try {
+      const response = await deleteParticipant(conversation.id, participantUserId);
+      
+      if (response.hasError) {
+        // Gérer les erreurs de l'API
+        const apiMessage = response.status?.message || '';
+        let errorMessage = 'Une erreur est survenue lors de la suppression du participant';
+        
+        // Personnaliser le message selon le type d'erreur
+        if (apiMessage.toLowerCase().includes('admin') || apiMessage.toLowerCase().includes('administrateur')) {
+          errorMessage = '✗ Seuls les administrateurs peuvent retirer des participants du groupe';
+        } else if (apiMessage.toLowerCase().includes('introuvable') || apiMessage.toLowerCase().includes('not found')) {
+          errorMessage = '✗ Participant introuvable. Il a peut-être déjà été retiré du groupe';
+        } else if (apiMessage.toLowerCase().includes('permission') || apiMessage.toLowerCase().includes('autorisé')) {
+          errorMessage = '✗ Vous n\'avez pas la permission de retirer ce participant';
+        } else if (apiMessage.toLowerCase().includes('dernier') || apiMessage.toLowerCase().includes('last')) {
+          errorMessage = '✗ Impossible de retirer le dernier participant du groupe';
+        } else if (apiMessage) {
+          errorMessage = `✗ ${apiMessage}`;
+        } else {
+          errorMessage = '✗ Erreur lors de la suppression du participant. Veuillez réessayer';
+        }
+        
+        setDeleteError(errorMessage);
+        // Fermer le message d'erreur après 5 secondes
+        setTimeout(() => {
+          setDeleteError('');
+        }, 5000);
+      } else {
+        // Suppression réussie - recharger les participants
+        await loadParticipants(conversation.id);
+      }
+    } catch (err: any) {
+      console.error('Erreur lors de la suppression du participant:', err);
+      let errorMessage = '✗ Erreur de connexion. Vérifiez votre connexion internet et réessayez';
+      
+      if (err.response?.data?.status?.message) {
+        errorMessage = `✗ ${err.response.data.status.message}`;
+      } else if (err.message) {
+        errorMessage = `✗ ${err.message}`;
+      }
+      
+      setDeleteError(errorMessage);
+      // Fermer le message d'erreur après 5 secondes
+      setTimeout(() => {
+        setDeleteError('');
+      }, 5000);
+    } finally {
+      setDeletingParticipantId(null);
+    }
+  }, [conversation.id, loadParticipants]);
+
+  // Fonction pour rendre un participant
+  const renderParticipant = (participant: ParticipantUser) => {
+    const currentUserId = getCurrentUserId();
+    const isOwnParticipant = participant.userId === currentUserId;
+    const isHovered = hoveredParticipantId === participant.id;
+    const showDeleteButton = currentUserIsAdmin && !isOwnParticipant && isHovered;
+
+    return (
+      <div 
+        key={participant.id} 
+        className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-600/30' : 'bg-white'} border ${borderColor} transition-all relative group`}
+        onMouseEnter={() => setHoveredParticipantId(participant.id)}
+        onMouseLeave={() => setHoveredParticipantId(null)}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-orange-400 shrink-0`}>
+            {participant.prenoms && participant.nom
+              ? (participant.prenoms.charAt(0) + participant.nom.charAt(0)).toUpperCase()
+              : participant.prenoms
+              ? participant.prenoms.charAt(0).toUpperCase()
+              : participant.email
+              ? participant.email.charAt(0).toUpperCase()
+              : '?'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`${textPrimary} font-medium text-sm`}>
+                {participant.prenoms && participant.nom
+                  ? `${participant.prenoms} ${participant.nom}`
+                  : participant.prenoms
+                  ? participant.prenoms
+                  : participant.nom
+                  ? participant.nom
+                  : participant.email
+                  ? participant.email.split('@')[0]
+                  : `Participant #${participant.userId || participant.id}`}
+              </p>
+              {/* Badge de statut stylisé */}
+              {participant.isAdmin !== undefined && (
+                <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm ${
+                  participant.isAdmin
+                    ? theme === 'dark'
+                      ? 'bg-gradient-to-r from-orange-500/30 to-orange-600/30 text-orange-300 border border-orange-400/40 shadow-orange-500/20'
+                      : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 border border-orange-300 shadow-orange-200/50'
+                    : theme === 'dark'
+                    ? 'bg-gradient-to-r from-gray-600/40 to-gray-700/40 text-gray-300 border border-gray-500/40 shadow-gray-600/20'
+                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300 shadow-gray-200/50'
+                }`}>
+                  {participant.isAdmin ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Admin
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                      </svg>
+                      Membre
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+            {participant.email && (
+              <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
+            )}
+          </div>
+        </div>
+        {/* Bouton left qui apparaît au survol */}
+        {showDeleteButton && (
+          <button
+            onClick={() => handleDeleteParticipant(participant.id, participant.userId)}
+            disabled={deletingParticipantId === participant.id}
+            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-all ${
+              deletingParticipantId === participant.id
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : theme === 'dark'
+                ? 'bg-red-900/50 text-red-400 hover:bg-red-900/70 hover:text-red-300 cursor-pointer'
+                : 'bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 cursor-pointer'
+            }`}
+            title="Retirer ce participant"
+          >
+            {deletingParticipantId === participant.id ? (
+              <FiLogOut className="w-4 h-4 animate-pulse" />
+            ) : (
+              <FiLogOut className="w-4 h-4" />
+            )}
+          </button>
+        )}
+      </div>
+    );
+  };
 
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
   const bgColor = theme === 'dark' ? 'bg-black' : 'bg-white';
@@ -295,70 +496,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   ) : sortedParticipants.length > 0 ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {sortedParticipants.map((participant) => (
-                        <div 
-                          key={participant.id} 
-                          className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-600/30' : 'bg-white'} border ${borderColor}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-orange-400 shrink-0`}>
-                              {participant.prenoms && participant.nom
-                                ? (participant.prenoms.charAt(0) + participant.nom.charAt(0)).toUpperCase()
-                                : participant.prenoms
-                                ? participant.prenoms.charAt(0).toUpperCase()
-                                : participant.email
-                                ? participant.email.charAt(0).toUpperCase()
-                                : '?'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className={`${textPrimary} font-medium text-sm`}>
-                                  {participant.prenoms && participant.nom
-                                    ? `${participant.prenoms} ${participant.nom}`
-                                    : participant.prenoms
-                                    ? participant.prenoms
-                                    : participant.nom
-                                    ? participant.nom
-                                    : participant.email
-                                    ? participant.email.split('@')[0]
-                                    : `Participant #${participant.userId || participant.id}`}
-                                </p>
-                                {/* Badge de statut stylisé */}
-                                {participant.isAdmin !== undefined && (
-                                  <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm ${
-                                    participant.isAdmin
-                                      ? theme === 'dark'
-                                        ? 'bg-gradient-to-r from-orange-500/30 to-orange-600/30 text-orange-300 border border-orange-400/40 shadow-orange-500/20'
-                                        : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 border border-orange-300 shadow-orange-200/50'
-                                      : theme === 'dark'
-                                      ? 'bg-gradient-to-r from-gray-600/40 to-gray-700/40 text-gray-300 border border-gray-500/40 shadow-gray-600/20'
-                                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300 shadow-gray-200/50'
-                                  }`}>
-                                    {participant.isAdmin ? (
-                                      <span className="flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        Admin
-                                      </span>
-                                    ) : (
-                                      <span className="flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                        </svg>
-                                        Membre
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
-                              </div>
-                              {participant.email && (
-                                <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                      {sortedParticipants.map(renderParticipant)}
                     </div>
                   ) : (
                     <div className="text-center py-4">
@@ -367,21 +505,66 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                   )}
                 </div>
 
-                {/* Bouton ajouter un participant */}
-                <AddParticipantButton
-                  conversationId={conversation.id}
-                  conversationTitle={titre}
-                  theme={theme}
-                  onSuccess={() => {
-                    // Recharger les participants après ajout
-                    loadParticipants(conversation.id);
-                  }}
-                />
+                {/* Message d'erreur pour la suppression */}
+                {deleteError && (
+                  <div className={`mt-4 p-3 rounded-lg border ${
+                    theme === 'dark'
+                      ? 'bg-red-900/20 border-red-700/50 text-red-300'
+                      : 'bg-red-50 border-red-200 text-red-700'
+                  }`}>
+                    <p className="text-sm font-medium">{deleteError}</p>
+                  </div>
+                )}
+
+                {/* Boutons ajouter et supprimer un participant */}
+                <div className="grid grid-cols-2 gap-3">
+                  <AddParticipantButton
+                    conversationId={conversation.id}
+                    conversationTitle={titre}
+                    theme={theme}
+                    onSuccess={() => {
+                      // Recharger les participants après ajout
+                      loadParticipants(conversation.id);
+                    }}
+                  />
+                  <RemoveParticipantButton
+                    conversationId={conversation.id}
+                    conversationTitle={titre}
+                    theme={theme}
+                    onSuccess={() => {
+                      // Recharger les participants après suppression
+                      loadParticipants(conversation.id);
+                    }}
+                  />
+                </div>
+
+                {/* Message d'erreur pour quitter le groupe */}
+                {leaveGroupError && (
+                  <div className={`mt-4 p-3 rounded-lg border ${
+                    theme === 'dark'
+                      ? 'bg-red-900/20 border-red-700/50 text-red-300'
+                      : 'bg-red-50 border-red-200 text-red-700'
+                  }`}>
+                    <p className="text-sm font-medium">{leaveGroupError}</p>
+                  </div>
+                )}
 
                 {/* Bouton quitter le groupe */}
                 <LeaveGroupButton
                   conversationId={conversation.id}
                   theme={theme}
+                  onLeave={() => {
+                    // Fermer le panneau après avoir quitté le groupe
+                    setIsOpen(false);
+                    // Optionnel: recharger les conversations ou rediriger
+                  }}
+                  onError={(errorMessage) => {
+                    setLeaveGroupError(errorMessage);
+                    // Fermer le message d'erreur après 5 secondes
+                    setTimeout(() => {
+                      setLeaveGroupError('');
+                    }, 5000);
+                  }}
                 />
               </div>
             </div>
