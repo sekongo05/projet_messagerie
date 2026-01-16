@@ -370,7 +370,12 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                 {/* Bouton ajouter un participant */}
                 <AddParticipantButton
                   conversationId={conversation.id}
+                  conversationTitle={titre}
                   theme={theme}
+                  onSuccess={() => {
+                    // Recharger les participants après ajout
+                    loadParticipants(conversation.id);
+                  }}
                 />
 
                 {/* Bouton quitter le groupe */}
