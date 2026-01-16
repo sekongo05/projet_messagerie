@@ -57,6 +57,20 @@ const CreateGroupe = ({ currentUserId, onClose, onSuccess, theme: themeProp }: C
     );
   };
 
+  // Vérifier si tous les contacts sont sélectionnés
+  const allSelected = contacts.length > 0 && selectedContacts.length === contacts.length;
+
+  // Fonction pour sélectionner/désélectionner tous les contacts
+  const handleToggleAll = () => {
+    if (allSelected) {
+      // Désélectionner tous
+      setSelectedContacts([]);
+    } else {
+      // Sélectionner tous
+      setSelectedContacts(contacts.map(contact => contact.id || 0));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -208,6 +222,32 @@ const CreateGroupe = ({ currentUserId, onClose, onSuccess, theme: themeProp }: C
                 <p className={`text-center py-8 ${textSecondary}`}>Aucun contact disponible</p>
               ) : (
                 <div className={`max-h-96 overflow-y-auto space-y-2 ${cardBg} rounded-lg p-4`}>
+                  {/* Option "Sélectionner tous" */}
+                  <label
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all mb-2 ${
+                      allSelected
+                        ? theme === 'dark'
+                          ? 'bg-orange-500/20 border-2 border-orange-500'
+                          : 'bg-orange-50 border-2 border-orange-400'
+                        : theme === 'dark'
+                        ? 'bg-gray-600/30 border-2 border-transparent hover:bg-gray-600/50'
+                        : 'bg-white border-2 border-transparent hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={handleToggleAll}
+                      className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 focus:ring-2"
+                      disabled={loading}
+                    />
+                    <div className="flex-1">
+                      <p className={`font-semibold ${textPrimary}`}>
+                        Sélectionner tous ({contacts.length} contact{contacts.length > 1 ? 's' : ''})
+                      </p>
+                    </div>
+                  </label>
+
                   {contacts.map((contact) => {
                     const isSelected = selectedContacts.includes(contact.id || 0);
                     const fullName = (contact.prenoms && contact.nom)

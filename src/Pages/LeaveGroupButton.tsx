@@ -48,26 +48,31 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
     
     try {
       const currentUserId = getCurrentUserId();
-      const response = await deleteParticipant(conversationId, currentUserId);
+      const response = await deleteParticipant(conversationId, currentUserId, currentUserId);
       
       if (response.hasError) {
-        // Gérer les erreurs de l'API
+        // Gérer les erreurs de l'API avec des messages personnalisés
         const apiMessage = response.status?.message || '';
-        let errorMessage = 'Une erreur est survenue lors de la sortie du groupe';
+        let errorMessage = '';
         
         // Personnaliser le message selon le type d'erreur
-        if (apiMessage.toLowerCase().includes('admin') || apiMessage.toLowerCase().includes('administrateur')) {
-          errorMessage = '✗ Les administrateurs ne peuvent pas quitter le groupe directement. Veuillez transférer les droits d\'administration d\'abord';
-        } else if (apiMessage.toLowerCase().includes('dernier') || apiMessage.toLowerCase().includes('last')) {
-          errorMessage = '✗ Impossible de quitter le groupe. Vous êtes le dernier membre. Supprimez le groupe à la place';
-        } else if (apiMessage.toLowerCase().includes('introuvable') || apiMessage.toLowerCase().includes('not found')) {
-          errorMessage = '✗ Participant introuvable. Vous avez peut-être déjà quitté le groupe';
-        } else if (apiMessage.toLowerCase().includes('permission') || apiMessage.toLowerCase().includes('autorisé')) {
-          errorMessage = '✗ Vous n\'avez pas la permission de quitter ce groupe';
-        } else if (apiMessage) {
-          errorMessage = `✗ ${apiMessage}`;
+        const lowerMessage = apiMessage.toLowerCase();
+        
+        if (lowerMessage.includes('admin') || lowerMessage.includes('administrateur') || lowerMessage.includes('administrator')) {
+          errorMessage = '⚠️ Action impossible : En tant qu\'administrateur, vous ne pouvez pas quitter le groupe directement.\n\n💡 Solution : Transférez d\'abord les droits d\'administration à un autre membre du groupe avant de le quitter.';
+        } else if (lowerMessage.includes('dernier') || lowerMessage.includes('last') || lowerMessage.includes('seul')) {
+          errorMessage = '⚠️ Action impossible : Vous êtes le dernier membre de ce groupe.\n\n💡 Solution : Pour supprimer définitivement le groupe, contactez un administrateur système ou utilisez l\'option de suppression du groupe si elle est disponible.';
+        } else if (lowerMessage.includes('introuvable') || lowerMessage.includes('not found') || lowerMessage.includes('n\'existe pas')) {
+          errorMessage = 'ℹ️ Information : Il semble que vous ayez déjà quitté ce groupe ou que celui-ci n\'existe plus.\n\n🔄 La liste des conversations sera mise à jour automatiquement.';
+        } else if (lowerMessage.includes('permission') || lowerMessage.includes('autorisé') || lowerMessage.includes('authorized') || lowerMessage.includes('accès')) {
+          errorMessage = '🚫 Permission refusée : Vous n\'avez pas les autorisations nécessaires pour quitter ce groupe.\n\n💡 Veuillez contacter un administrateur du groupe pour obtenir de l\'aide.';
+        } else if (lowerMessage.includes('réseau') || lowerMessage.includes('network') || lowerMessage.includes('timeout') || lowerMessage.includes('connexion')) {
+          errorMessage = '🌐 Problème de connexion : Impossible de contacter le serveur.\n\n🔄 Vérifiez votre connexion internet et réessayez dans quelques instants.';
+        } else if (apiMessage && apiMessage.trim() !== '') {
+          // Utiliser le message de l'API mais le formater de manière plus conviviale
+          errorMessage = `❌ Erreur : ${apiMessage}\n\n💡 Veuillez réessayer ou contacter le support si le problème persiste.`;
         } else {
-          errorMessage = '✗ Erreur lors de la sortie du groupe. Veuillez réessayer';
+          errorMessage = '❌ Oups ! Une erreur inattendue s\'est produite lors de votre tentative de quitter le groupe.\n\n🔄 Veuillez réessayer dans quelques instants. Si le problème persiste, rafraîchissez la page.';
         }
         
         // Appeler le callback d'erreur si fourni, sinon afficher une alerte
@@ -85,12 +90,23 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
       }
     } catch (err: any) {
       console.error('Erreur lors de la sortie du groupe:', err);
-      let errorMessage = '✗ Erreur de connexion. Vérifiez votre connexion internet et réessayez';
+      let errorMessage = '';
       
       if (err.response?.data?.status?.message) {
-        errorMessage = `✗ ${err.response.data.status.message}`;
+        const apiMsg = err.response.data.status.message.toLowerCase();
+        if (apiMsg.includes('réseau') || apiMsg.includes('network') || apiMsg.includes('timeout')) {
+          errorMessage = '🌐 Problème de connexion : Le serveur ne répond pas.\n\n🔄 Vérifiez votre connexion internet et réessayez. Si le problème persiste, le serveur peut être temporairement indisponible.';
+        } else {
+          errorMessage = `❌ Erreur : ${err.response.data.status.message}\n\n💡 Veuillez réessayer ou rafraîchir la page.`;
+        }
       } else if (err.message) {
-        errorMessage = `✗ ${err.message}`;
+        if (err.message.toLowerCase().includes('network') || err.message.toLowerCase().includes('timeout')) {
+          errorMessage = '🌐 Problème de connexion : Impossible d\'établir une connexion avec le serveur.\n\n🔄 Vérifiez votre connexion internet et réessayez.';
+        } else {
+          errorMessage = `❌ Erreur technique : ${err.message}\n\n💡 Si le problème persiste, essayez de rafraîchir la page.`;
+        }
+      } else {
+        errorMessage = '🌐 Erreur de connexion : Impossible de contacter le serveur.\n\n🔄 Vérifiez votre connexion internet et réessayez. Si le problème persiste, le serveur peut être temporairement indisponible.';
       }
       
       // Appeler le callback d'erreur si fourni, sinon afficher une alerte
