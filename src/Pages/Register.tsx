@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Theme } from '../mode';
 import { CreateUser } from '../Api/Usercreate.api';
+import { FiCheckCircle, FiXCircle, FiUserPlus } from 'react-icons/fi';
 
 type RegisterProps = {
   onNavigateToLogin?: () => void;
@@ -81,12 +82,41 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
   return (
     <div className={`min-h-screen flex items-center justify-center ${bgGradient} px-4`}>
       <div className={`max-w-md w-full ${cardBg} rounded-2xl shadow-xl p-8 transition-colors duration-300`}>
-        <div className="text-center mb-8">
-          <h1 className={`text-3xl font-bold ${textPrimary} mb-2`}>Inscription</h1>
-          <p className={textSecondary}>Créez votre compte</p>
+        {/* En-tête esthétique avec icône */}
+        <div className={`text-center mb-8 pb-6 border-b ${theme === 'light' ? 'border-gray-200' : 'border-gray-900'}`}>
+          {/* Icône de messagerie avec animations */}
+          <div className="flex justify-center mb-4">
+            <div className={`relative inline-flex items-center justify-center w-24 h-24 rounded-full animate-float animate-glow ${
+              theme === 'light' 
+                ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600' 
+                : 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700'
+            }`}>
+              {/* Effet de brillance animé */}
+              <div className={`absolute inset-0 rounded-full ${
+                theme === 'light' 
+                  ? 'bg-gradient-to-tr from-white/40 to-transparent' 
+                  : 'bg-gradient-to-tr from-white/30 to-transparent'
+              } animate-pulse`} style={{ animationDuration: '1.5s' }}></div>
+              
+              <FiUserPlus className="w-12 h-12 text-white relative z-10" strokeWidth={2} />
+            </div>
+          </div>
+          
+          {/* Titre accrocheur */}
+          <h1 className={`text-4xl font-bold mb-3 ${
+            theme === 'light' 
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent' 
+              : 'text-orange-400'
+          }`}>
+            🎉 Créez votre compte
+          </h1>
+          
+          <p className={`${textSecondary} text-sm`}>
+            Rejoignez notre communauté de messagerie
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="nom" className={`block text-sm font-medium ${labelColor} mb-2`}>
               Nom
@@ -97,7 +127,7 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
               value={nom}
               onChange={(e) => setNom(e.target.value)}
               required
-              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400`}
+              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400 hover:border-orange-300 ${theme === 'dark' ? 'hover:border-orange-700' : ''}`}
               placeholder="Votre nom"
             />
           </div>
@@ -112,7 +142,7 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
               value={prenom}
               onChange={(e) => setPrenom(e.target.value)}
               required
-              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400`}
+              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400 hover:border-orange-300 ${theme === 'dark' ? 'hover:border-orange-700' : ''}`}
               placeholder="Votre prénom"
             />
           </div>
@@ -127,43 +157,45 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400`}
+              className={`w-full px-4 py-3 ${inputBg} ${inputText} ${inputBorder} border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:border-transparent outline-none transition-all placeholder-gray-400 hover:border-orange-300 ${theme === 'dark' ? 'hover:border-orange-700' : ''}`}
               placeholder="votre.email@exemple.com"
             />
           </div>
 
           {error && (
-            <div className={`${theme === 'light' ? 'bg-red-50 border-red-200 text-red-700' : theme === 'dark' ? 'bg-red-900/30 border-red-700 text-red-300' : 'bg-red-950 border-red-800 text-red-400'} border px-4 py-3 rounded-lg text-sm`}>
-              {error}
+            <div className={`${theme === 'light' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-red-900/40 border-red-600 text-red-200'} border-2 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium shadow-md animate-slide-down transition-all`}>
+              <div className={`flex-shrink-0 ${theme === 'light' ? 'text-red-600' : 'text-red-400'}`}>
+                <FiXCircle className="w-5 h-5" />
+              </div>
+              <p className="flex-1">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className={`${theme === 'light' ? 'bg-green-50 border-green-200 text-green-700' : theme === 'dark' ? 'bg-green-900/30 border-green-700 text-green-300' : 'bg-green-950 border-green-800 text-green-400'} border px-4 py-3 rounded-lg text-sm`}>
-              Inscription réussie ! Votre compte a été créé.
+            <div className={`${theme === 'light' ? 'bg-green-50 border-green-300 text-green-800' : 'bg-green-900/40 border-green-600 text-green-200'} border-2 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium shadow-md animate-slide-down transition-all`}>
+              <div className={`flex-shrink-0 ${theme === 'light' ? 'text-green-600' : 'text-green-400'} animate-pulse`}>
+                <FiCheckCircle className="w-5 h-5" />
+              </div>
+              <p className="flex-1">Inscription réussie ! Votre compte a été créé.</p>
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-orange-400 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors">
-            S'inscrire
+            className="w-full bg-orange-400 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            ✨ S'inscrire
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className={`text-sm ${textSecondary}`}>
             Vous avez déjà un compte ?{' '}
-            <a
-              href="/login"
-              onClick={(e) => {
-                e.preventDefault();
-                handleLoginClick();
-              }}
-              className={`${linkColor} font-medium underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded`}
+            <button
+              onClick={handleLoginClick}
+              className={`${linkColor} cursor-pointer font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 rounded hover:opacity-80 transition-opacity`}
             >
               Se connecter
-            </a>
+            </button>
           </p>
         </div>
       </div>
