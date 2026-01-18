@@ -487,7 +487,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
             {/* Menu déroulant */}
             {isMenuOpen && (
-              <div className={`absolute right-0 bottom-full mb-1 rounded-lg border shadow-xl z-50 min-w-[200px] ${
+              <div className={`absolute right-full mr-2 top-1/2 transform -translate-y-1/2 rounded-lg border shadow-xl z-50 min-w-[200px] ${
                 theme === 'dark'
                   ? 'bg-gray-900 border-gray-700'
                   : 'bg-white border-gray-200'
