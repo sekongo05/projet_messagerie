@@ -3,10 +3,10 @@ import { CgInfo } from "react-icons/cg";
 import { useTheme } from '../mode';
 import type { Conversation } from '../Api/Conversation.api';
 import { FiCalendar, FiHash, FiUsers, FiChevronDown, FiUserPlus, FiUserMinus, FiLogOut, FiMoreVertical, FiShield, FiX } from "react-icons/fi";
-import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import { promoteAdmin } from '../Api/PromoteAdmin.api';
-import { deleteParticipant } from '../Api/deleteParticipant.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
 import AddParticipantsModal from './AddParticipantsModal';
 import RemoveParticipantModal from './RemoveParticipantModal';
 
@@ -328,7 +328,10 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
     try {
       const currentUserId = getCurrentUserId();
-      const response = await deleteParticipant(conversation.id, currentUserId, currentUserId);
+      const response = await deleteParticipant(
+        { conversationId: conversation.id, userId: currentUserId },
+        currentUserId
+      );
 
       if (response.hasError) {
         const apiMessage = response.status?.message || '';

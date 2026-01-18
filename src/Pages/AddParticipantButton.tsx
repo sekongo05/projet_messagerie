@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTheme } from '../mode';
 import { CgAdd } from 'react-icons/cg';
 import AddParticipantsModal from './AddParticipantsModal';
-import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 
 type AddParticipantButtonProps = {
   conversationId: number;

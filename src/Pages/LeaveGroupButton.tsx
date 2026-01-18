@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTheme } from '../mode';
 import { FiLogOut } from 'react-icons/fi';
-import { deleteParticipant } from '../Api/deleteParticipant.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
 
 type LeaveGroupButtonProps = {
   conversationId: number;
@@ -48,7 +48,10 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
     
     try {
       const currentUserId = getCurrentUserId();
-      const response = await deleteParticipant(conversationId, currentUserId, currentUserId);
+      const response = await deleteParticipant(
+        { conversationId, userId: currentUserId },
+        currentUserId
+      );
       
       if (response.hasError) {
         // Gérer les erreurs de l'API avec des messages personnalisés

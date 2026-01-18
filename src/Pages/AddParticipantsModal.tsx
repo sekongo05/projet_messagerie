@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { getUsers, type User } from '../Api/User.api';
-import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { FiLoader, FiX } from 'react-icons/fi';
 import axios from 'axios';
 

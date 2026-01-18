@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTheme } from '../mode';
 import { FiTrash2 } from 'react-icons/fi';
 import RemoveParticipantModal from './RemoveParticipantModal';
-import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 
 type RemoveParticipantButtonProps = {
   conversationId: number;

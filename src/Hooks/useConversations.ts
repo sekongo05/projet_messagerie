@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getConversations, type Conversation } from '../Api/Conversation.api';
-import { getParticipantsByConversationId } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { createConversation } from '../Api/ConversationCreate.api';
 import { getUsers, type User } from '../Api/User.api';
 

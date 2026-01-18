@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
-import { getParticipantsByConversationId, deleteParticipant } from '../Api/ParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import { FiLoader, FiX, FiTrash2 } from 'react-icons/fi';
 
@@ -114,7 +115,7 @@ const RemoveParticipantModal = ({
     setError('');
 
     try {
-      await deleteParticipant(participantId, currentUserId);
+      await deleteParticipant({ participantId }, currentUserId);
       
       // Retirer le participant de la liste locale
       setParticipants(prev => prev.filter(p => p.id !== participantId));
