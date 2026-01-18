@@ -20,7 +20,7 @@ type ChatProps = {
 };
 
 const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
   const [showCreateGroupe, setShowCreateGroupe] = useState(false);

@@ -72,9 +72,10 @@ const ChatHeader = ({
 
   return (
     <div className={`px-4 py-3 border-b ${borderColor} ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+      
       {/* Nom de l'utilisateur connecté - Design moderne */}
       {getFullName && (
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center items-center mb-4 relative">
           <div className={`relative inline-flex items-center gap-3 px-6 py-3 rounded-2xl ${
             theme === 'dark'
               ? 'bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800'
