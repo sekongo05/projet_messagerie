@@ -5,8 +5,10 @@ import type { Message } from '../../Api/Message.api';
 type MessagesListProps = {
   messages: Message[];
   currentUserId: number;
+  conversationId: number | null;
   theme?: 'light' | 'dark';
   isGroupConversation?: boolean;
+  onMessageDeleted?: () => void;
 };
 
 const formatDayLabel = (isoDate: string) => {
@@ -28,8 +30,10 @@ const formatDayLabel = (isoDate: string) => {
 export const MessagesList = ({
   messages,
   currentUserId,
+  conversationId,
   theme = 'light',
   isGroupConversation = false,
+  onMessageDeleted,
 }: MessagesListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -82,9 +86,11 @@ export const MessagesList = ({
               )}
               <MessageItem 
                 message={message} 
-                currentUserId={currentUserId} 
+                currentUserId={currentUserId}
+                conversationId={conversationId}
                 theme={theme} 
                 isGroupConversation={isGroupConversation}
+                onMessageDeleted={onMessageDeleted}
               />
             </div>
           );

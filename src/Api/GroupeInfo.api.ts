@@ -25,7 +25,7 @@ export type GroupeInfoResponse = {
 
 export const getGroupeInfo = async (
   groupeId: number,
-  userId: number = 1
+  userId: number 
 ): Promise<GroupeInfo> => {
   try {
     const response = await axios.post<GroupeInfoResponse>("/api/groupe/info", {

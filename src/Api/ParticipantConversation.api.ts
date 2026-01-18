@@ -1,5 +1,6 @@
 // src/api/conversation.api.ts
 import axios from 'axios';
+import { getCurrentUserId } from '../utils/user.utils';
 
 const API_URL = 'http://localhost:8080';
 
@@ -11,13 +12,21 @@ export interface ParticipantConversation {
 }
 
 export const getParticipantsByConversationId = async (
-  conversationId: number
+  conversationId: number,
+  userId?: number
 ) => {
+  // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
+  const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
+  
+  if (!resolvedUserId) {
+    throw new Error('ID utilisateur requis. Veuillez vous connecter.');
+  }
+
   try {
     const response = await axios.post(
       `${API_URL}/participantConversation/getByCriteria`,
       {
-        user: 1,
+        user: resolvedUserId,
         isSimpleLoading: false,
         data: {
           conversationId: conversationId
@@ -39,13 +48,20 @@ export const getParticipantsByConversationId = async (
 
 export const deleteParticipant = async (
   participantId: number,
-  userId: number = 1
+  userId?: number
 ) => {
+  // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
+  const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
+  
+  if (!resolvedUserId) {
+    throw new Error('ID utilisateur requis. Veuillez vous connecter.');
+  }
+
   try {
     const response = await axios.post(
       `${API_URL}/participantConversation/delete`,
       {
-        user: userId,
+        user: resolvedUserId,
         datas: [{ id: participantId }]
       }
     );

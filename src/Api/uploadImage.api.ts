@@ -1,4 +1,5 @@
 import axiosInstance from "./axios";
+import { getCurrentUserId } from '../utils/user.utils';
 
 export type UploadImageData = {
   conversationId: number;
@@ -18,8 +19,15 @@ type UploadImageResponse = {
 // Fonction pour uploader un fichier image (multipart/form-data)
 export const uploadImageMessage = async (
   imageData: UploadImageData,
-  userId: number = 1
+  userId?: number
 ): Promise<any> => {
+  // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
+  const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
+  
+  if (!resolvedUserId) {
+    throw new Error('ID utilisateur requis. Veuillez vous connecter.');
+  }
+
   try {
     // Créer un FormData pour l'upload multipart
     const formData = new FormData();
@@ -36,7 +44,7 @@ export const uploadImageMessage = async (
     }
     
     // Ajouter l'utilisateur
-    formData.append("user", userId.toString());
+    formData.append("user", resolvedUserId.toString());
 
     const response = await axiosInstance.post<UploadImageResponse>(
       "/api/message/create-with-file",

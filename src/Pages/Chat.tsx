@@ -92,6 +92,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     messages,
     loading: messagesLoading,
     handleSendMessage,
+    loadMessages,
   } = useMessages({
     activeConversationId,
     currentUserId,
@@ -195,6 +196,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           theme={theme}
           onCloseConversation={handleCloseConversation}
           onSendMessage={handleSendMessage}
+          onMessageDeleted={activeConversationId ? () => loadMessages(activeConversationId) : undefined}
         />
       </div>
 

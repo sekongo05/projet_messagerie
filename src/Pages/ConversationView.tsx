@@ -12,6 +12,7 @@ type ConversationViewProps = {
   theme?: 'light' | 'dark';
   onCloseConversation: () => void;
   onSendMessage: (formData: FormData, conversationId: number) => Promise<void>;
+  onMessageDeleted?: () => void;
 };
 
 const ConversationView = ({
@@ -22,6 +23,7 @@ const ConversationView = ({
   theme = 'light',
   onCloseConversation,
   onSendMessage,
+  onMessageDeleted,
 }: ConversationViewProps) => {
   const borderColor = theme === 'dark' ? 'border-gray-900' : 'border-gray-300';
 
@@ -131,8 +133,10 @@ const ConversationView = ({
       <MessagesList
         messages={messages}
         currentUserId={currentUserId}
+        conversationId={activeConversationId}
         theme={theme}
         isGroupConversation={isGroupConversation}
+        onMessageDeleted={onMessageDeleted}
       />
 
       {/* Input pour envoyer un message */}

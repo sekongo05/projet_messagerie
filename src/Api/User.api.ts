@@ -1,5 +1,6 @@
 // src/api/user.api.ts
 import axios from "./axios";
+import { getCurrentUserId } from '../utils/user.utils';
 
 export type User = {
   id: number;
@@ -12,10 +13,17 @@ export type User = {
   [key: string]: any;
 };
 
-export const getUsers = async (userId: number = 1) => {
+export const getUsers = async (userId?: number) => {
+  // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
+  const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
+  
+  if (!resolvedUserId) {
+    throw new Error('ID utilisateur requis. Veuillez vous connecter.');
+  }
+
   try {
     const response = await axios.post("/api/user/getByCriteria", {
-      user: userId,
+      user: resolvedUserId,
       isSimpleLoading: false,
       data: {}
     }, {

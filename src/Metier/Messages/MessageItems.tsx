@@ -1,19 +1,25 @@
 import { useState } from 'react';
 import type { Message } from '../../Api/Message.api';
 import MessageActions from '../../Pages/MessageActions';
+import { deleteMessage } from '../../Api/deleteMessage.api';
+import { getCurrentUserId } from '../../utils/user.utils';
 
 type MessageItemProps = {
   message: Message;
   currentUserId: number;
+  conversationId: number | null;
   theme?: 'light' | 'dark';
   isGroupConversation?: boolean;
+  onMessageDeleted?: () => void;
 };
 
 export const MessageItem = ({
   message,
   currentUserId,
+  conversationId,
   theme = 'light',
   isGroupConversation = false,
+  onMessageDeleted,
 }: MessageItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
   // Règle UI demandée:
@@ -75,19 +81,71 @@ export const MessageItem = ({
 
   const time = formatTime(message.createdAt);
 
-  const handleDeleteForMe = () => {
-    console.log('Supprimer pour moi:', message.id);
-    // TODO: Implémenter la suppression pour moi
+  const handleDeleteForMe = async () => {
+    console.log('handleDeleteForMe appelé', { 
+      messageId: message.id, 
+      conversationId, 
+      currentUserId 
+    });
+
+    if (!conversationId) {
+      console.error('ID de conversation manquant');
+      alert('Erreur : ID de conversation manquant');
+      return;
+    }
+
+    const userId = getCurrentUserId();
+    if (!userId) {
+      console.error('Utilisateur non connecté');
+      alert('Erreur : Utilisateur non connecté');
+      return;
+    }
+
+    console.log('Appel API deleteMessage avec:', {
+      messageId: message.id,
+      userId,
+      conversationId
+    });
+
+    try {
+      await deleteMessage(message.id, userId, conversationId);
+      console.log('Message supprimé avec succès, rechargement des messages...');
+      
+      // Recharger les messages après suppression
+      if (onMessageDeleted) {
+        console.log('Appel onMessageDeleted callback');
+        onMessageDeleted();
+      } else {
+        console.warn('onMessageDeleted callback non défini');
+        // Recharger la page en dernier recours si le callback n'est pas disponible
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la suppression du message:', error);
+      console.error('Détails de l\'erreur:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      const errorMessage = error.response?.data?.status?.message 
+        || error.response?.data?.message
+        || error.message 
+        || 'Erreur lors de la suppression du message';
+      alert(`Erreur : ${errorMessage}`);
+    }
   };
 
   const handleDeleteForAll = () => {
+    // TODO: Implémenter la suppression pour tous (nécessite peut-être une autre API)
     console.log('Supprimer pour tous:', message.id);
-    // TODO: Implémenter la suppression pour tous
+    alert('La fonctionnalité "Supprimer pour tous" n\'est pas encore implémentée');
   };
 
-  const handleDelete = () => {
-    console.log('Supprimer:', message.id);
-    // TODO: Implémenter la suppression
+  const handleDelete = async () => {
+    // Pour les messages reçus, "Supprimer pour moi" utilise la même logique
+    await handleDeleteForMe();
   };
 
   return (
