@@ -1,5 +1,6 @@
 import { ConversationItem } from './ConversationItems';
 import type { Conversation } from '../../Api/Conversation.api';
+import { exportConversations } from '../../Api/exportConversation.api';
 
 type ConversationListProps = {
   conversations: Conversation[];
@@ -59,6 +60,16 @@ export const ConversationList = ({
     );
   }
 
+  // Fonction pour exporter une conversation
+  const handleExportConversation = async (conversationId: number) => {
+    try {
+      await exportConversations(conversationId);
+    } catch (error: any) {
+      console.error('Erreur lors de l\'export de la conversation:', error);
+      alert('Erreur lors de l\'export de la conversation. Veuillez réessayer.');
+    }
+  };
+
   return (
     <div className={`h-full overflow-y-auto ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       {sortedConversations.map((conversation) => (
@@ -72,6 +83,7 @@ export const ConversationList = ({
           avatar={conversation.avatar}
           isActive={conversation.id === activeConversationId}
           onClick={() => onConversationSelect(conversation.id)}
+          onExport={handleExportConversation}
           theme={theme}
         />
       ))}

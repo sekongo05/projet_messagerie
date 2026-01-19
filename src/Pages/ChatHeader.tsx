@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { CgAdd, CgExport, CgProfile, CgLogOut } from "react-icons/cg";
+import { exportConversations } from '../Api/exportConversation.api';
 
 type ChatHeaderProps = {
   theme?: 'light' | 'dark';
@@ -228,12 +229,20 @@ const ChatHeader = ({
           </div>
           
           <button 
+            onClick={async () => {
+              try {
+                await exportConversations();
+              } catch (error: any) {
+                console.error('Erreur lors de l\'export:', error);
+                alert('Erreur lors de l\'export. Veuillez réessayer.');
+              }
+            }}
             className={`group relative p-2 rounded-xl transition-all duration-300 ${
               theme === 'dark' 
                 ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
                 : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
             }`}
-            title="Exporter"
+            title="Exporter toutes les conversations"
           >
             <div className={`absolute inset-0 rounded-xl ${
               theme === 'dark' 
