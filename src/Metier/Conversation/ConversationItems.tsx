@@ -1,5 +1,7 @@
+import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { CgExport } from "react-icons/cg";
+import { FiMoreVertical, FiTrash2 } from "react-icons/fi";
 
 type ConversationItemProps = {
   id: number;
@@ -11,6 +13,8 @@ type ConversationItemProps = {
   isActive?: boolean;
   onClick: () => void;
   onExport?: (conversationId: number) => void;
+  onDelete?: (conversationId: number) => void;
+  isGroup?: boolean;
   children?: ReactNode;
   theme?: 'light' | 'dark';
 };
@@ -25,8 +29,29 @@ export const ConversationItem = ({
   isActive = false,
   onClick,
   onExport,
+  onDelete,
+  isGroup = false,
   theme = 'light',
 }: ConversationItemProps) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fermer le menu si on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
   const nameColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
   const messageColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
@@ -165,7 +190,7 @@ export const ConversationItem = ({
                   onExport(id);
                 }
               }}
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer relative group ${
                 theme === 'dark'
                   ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
                   : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -174,7 +199,69 @@ export const ConversationItem = ({
               aria-label="Exporter les messages"
             >
               <CgExport className="w-4 h-4" />
+              {/* Tooltip au survol */}
+              <span className={`absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-900 text-white'
+              }`}>
+                Exporter
+              </span>
             </button>
+            
+            {/* Bouton trois points avec menu */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'dark'
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                }`}
+                title="Actions"
+                aria-label="Actions"
+              >
+                <FiMoreVertical className="w-4 h-4" />
+              </button>
+
+              {/* Menu déroulant */}
+              {showMenu && (
+                <div className={`absolute right-0 top-full mt-1 rounded-lg border shadow-xl z-50 min-w-[180px] ${
+                  theme === 'dark'
+                    ? 'bg-gray-900 border-gray-700'
+                    : 'bg-white border-gray-200'
+                }`}>
+                  <div className="py-1">
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Appeler directement onDelete sans confirmation
+                          // La vérification et les messages seront gérés dans handleDelete
+                          onDelete(id);
+                          setShowMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 cursor-pointer transition-all flex items-center gap-3 ${
+                          theme === 'dark'
+                            ? 'hover:bg-gray-800 text-red-400'
+                            : 'hover:bg-red-50 text-red-600'
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-lg ${
+                          theme === 'dark' ? 'bg-red-900/30' : 'bg-red-100'
+                        }`}>
+                          <FiTrash2 className="w-4 h-4" />
+                        </div>
+                        <span className="font-medium text-sm">Supprimer</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         {lastMessage && (

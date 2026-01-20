@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
-import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
+import { leaveGroup } from '../Api/leaveGroup.api';
 import { getUsers, type User } from '../Api/User.api';
 import { FiLoader, FiX, FiTrash2 } from 'react-icons/fi';
 
@@ -115,7 +115,14 @@ const RemoveParticipantModal = ({
     setError('');
 
     try {
-      await deleteParticipant({ participantId }, currentUserId);
+      // Trouver le participant pour obtenir son userId
+      const participant = participants.find(p => p.id === participantId);
+      if (!participant) {
+        throw new Error('Participant introuvable');
+      }
+
+      // Utiliser leaveGroup avec conversationId, userId du participant, et currentUserId comme requestingUserId
+      await leaveGroup(conversationId, participant.userId, currentUserId);
       
       // Retirer le participant de la liste locale
       setParticipants(prev => prev.filter(p => p.id !== participantId));

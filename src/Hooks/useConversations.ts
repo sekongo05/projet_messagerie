@@ -48,12 +48,21 @@ export const useConversations = ({
         }
 
         // Vérifier si l'utilisateur est dans les participants
-        const isParticipant = participantsList.some(
+        const userParticipant = participantsList.find(
           (participant: any) => participant.userId === userId
         );
 
-        if (isParticipant) {
-          filteredConversations.push(conversation);
+        // Si l'utilisateur est participant ET n'a pas hasCleaned = true
+        // hasCleaned = true signifie que l'utilisateur a supprimé/nettoyé la conversation
+        if (userParticipant) {
+          const hasCleaned = userParticipant.hasCleaned === true 
+            || userParticipant.hasCleaned === 1 
+            || userParticipant.hasCleaned === 'true';
+          
+          // Exclure les conversations où l'utilisateur a hasCleaned = true
+          if (!hasCleaned) {
+            filteredConversations.push(conversation);
+          }
         }
       } catch (error) {
         console.error(`Erreur lors de la vérification des participants pour la conversation ${conversation.id}:`, error);

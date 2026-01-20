@@ -17,7 +17,7 @@ export const getConversations = async () => {
     const response = await axios.post(`${API_URL}/conversation/getByCriteria`, {
       user: 1,
       isSimpleLoading: false,
-      data: {}
+      data:{}
     });
         console.log("data de conversation "+ response.data)
 

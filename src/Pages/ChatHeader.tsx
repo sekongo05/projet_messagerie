@@ -237,7 +237,7 @@ const ChatHeader = ({
                 alert('Erreur lors de l\'export. Veuillez réessayer.');
               }
             }}
-            className={`group relative p-2 rounded-xl transition-all duration-300 ${
+            className={`group relative p-2 rounded-xl transition-all duration-300 cursor-pointer ${
               theme === 'dark' 
                 ? 'text-gray-400 hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/20 hover:text-orange-400 hover:shadow-lg hover:shadow-orange-500/20' 
                 : 'text-gray-600 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-200/50'
@@ -250,6 +250,14 @@ const ChatHeader = ({
                 : 'bg-gradient-to-br from-orange-200/0 to-orange-100/0 group-hover:from-orange-200/30 group-hover:to-orange-100/30'
             } transition-all duration-300`} />
             <CgExport className='w-5 h-5 relative z-10 transform group-hover:scale-110 transition-transform duration-300' />
+            {/* Tooltip au survol */}
+            <span className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 ${
+              theme === 'dark'
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-900 text-white'
+            }`}>
+              Exporter
+            </span>
           </button>
           {onNavigateToProfile && (
             <button 

@@ -4,15 +4,23 @@ import type { Conversation } from '../Api/Conversation.api';
 type PriveProps = {
   conversations: Conversation[];
   onConversationSelect?: (conversationId: number) => void;
+  onConversationDeleted?: () => void;
   activeConversationId?: number;
   theme?: 'light' | 'dark';
+  onError?: (message: string) => void;
+  onSuccess?: (message: string) => void;
+  onWarning?: (message: string) => void;
 };
 
 const Prive = ({ 
   conversations,
-  onConversationSelect, 
+  onConversationSelect,
+  onConversationDeleted,
   activeConversationId,
-  theme = 'light' 
+  theme = 'light',
+  onError,
+  onSuccess,
+  onWarning,
 }: PriveProps) => {
   // Filtrer uniquement les conversations privées
   const privateConversations = conversations.filter(
@@ -30,7 +38,11 @@ const Prive = ({
       conversations={privateConversations}
       activeConversationId={activeConversationId}
       onConversationSelect={handleConversationSelect}
+      onConversationDeleted={onConversationDeleted}
       theme={theme}
+      onError={onError}
+      onSuccess={onSuccess}
+      onWarning={onWarning}
     />
   );
 };

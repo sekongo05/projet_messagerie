@@ -14,6 +14,7 @@ import ConversationEmptyState from './ConversationEmptyState';
 import { useConversations } from '../Hooks/useConversations';
 import { useMessages } from '../Hooks/useMessages';
 import { useConversationFilter } from '../Hooks/useConversationFilter';
+import { ToastContainer, useToast } from '../components/Toast';
 
 type ChatProps = {
   onNavigateToProfile?: () => void;
@@ -24,6 +25,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
   const [showCreateGroupe, setShowCreateGroupe] = useState(false);
+  const { toasts, removeToast, error: showError, success: showSuccess, warning: showWarning } = useToast();
 
   // Récupérer l'ID de l'utilisateur connecté depuis localStorage
   const getCurrentUserId = (): number | null => {
@@ -163,7 +165,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 conversations={filteredConversations}
                 onConversationSelect={handleConversationSelect}
                 activeConversationId={activeConversationId || undefined}
+                onConversationDeleted={loadConversations}
                 theme={theme}
+                onError={showError}
+                onSuccess={showSuccess}
+                onWarning={showWarning}
               />
             )}
             {activeTab === 'groupe' && (
@@ -171,7 +177,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 conversations={filteredConversations}
                 onConversationSelect={handleConversationSelect}
                 activeConversationId={activeConversationId || undefined}
+                onConversationDeleted={loadConversations}
                 theme={theme}
+                onError={showError}
+                onSuccess={showSuccess}
+                onWarning={showWarning}
               />
             )}
             {activeTab === 'all' && (
@@ -179,7 +189,11 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
                 conversations={filteredConversations}
                 activeConversationId={activeConversationId || undefined}
                 onConversationSelect={handleConversationSelect}
+                onConversationDeleted={loadConversations}
                 theme={theme}
+                onError={showError}
+                onSuccess={showSuccess}
+                onWarning={showWarning}
               />
             )}
           </>
@@ -215,6 +229,9 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           theme={theme}
         />
       )}
+
+      {/* Container des toasts */}
+      <ToastContainer toasts={toasts} onClose={removeToast} theme={theme} />
     </div>
   );
 };

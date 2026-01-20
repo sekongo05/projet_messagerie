@@ -6,7 +6,7 @@ import { FiCalendar, FiHash, FiUsers, FiChevronDown, FiUserPlus, FiUserMinus, Fi
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import { promoteAdmin } from '../Api/PromoteAdmin.api';
-import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
+import { leaveGroup } from '../Api/leaveGroup.api';
 import AddParticipantsModal from './AddParticipantsModal';
 import RemoveParticipantModal from './RemoveParticipantModal';
 
@@ -328,8 +328,9 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
     try {
       const currentUserId = getCurrentUserId();
-      const response = await deleteParticipant(
-        { conversationId: conversation.id, userId: currentUserId },
+      const response = await leaveGroup(
+        conversation.id,
+        currentUserId,
         currentUserId
       );
 

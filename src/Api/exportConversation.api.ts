@@ -1,11 +1,15 @@
 import axios from "./axios";
+import { getCurrentUserId } from '../utils/user.utils';
 
 const API_URL = 'http://localhost:8080';
 
 export const exportConversations = async (conversationId?: number) => {
   try {
+    // Récupérer l'ID de l'utilisateur connecté
+    const currentUserId = getCurrentUserId() ?? 1;
+    
     const requestData: any = {
-      user: 1,
+      user: currentUserId,
       isSimpleLoading: false,
       data: {},
       datas: []
@@ -43,5 +47,5 @@ export const exportConversations = async (conversationId?: number) => {
 };
 
 // Utilisation :
-// exportConversations()           // Exporte toutes les conversations
+// exportConversations()           // Exporte toutes les conversations de l'utilisateur connecté
 // exportConversations(123)        // Exporte uniquement la conversation avec l'ID 123
