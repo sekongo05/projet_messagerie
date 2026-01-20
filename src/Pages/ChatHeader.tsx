@@ -8,6 +8,7 @@ type ChatHeaderProps = {
   onLogout: () => void;
   onAddNewDiscussion: () => void;
   onAddNewGroup: () => void;
+  onError?: (message: string) => void;
 };
 
 const ChatHeader = ({
@@ -16,6 +17,7 @@ const ChatHeader = ({
   onLogout,
   onAddNewDiscussion,
   onAddNewGroup,
+  onError,
 }: ChatHeaderProps) => {
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -234,7 +236,11 @@ const ChatHeader = ({
                 await exportConversations();
               } catch (error: any) {
                 console.error('Erreur lors de l\'export:', error);
-                alert('Erreur lors de l\'export. Veuillez réessayer.');
+                if (onError) {
+                  onError('Erreur lors de l\'export. Veuillez réessayer.');
+                } else {
+                  alert('Erreur lors de l\'export. Veuillez réessayer.');
+                }
               }
             }}
             className={`group relative p-2 rounded-xl transition-all duration-300 cursor-pointer ${

@@ -13,6 +13,8 @@ type ConversationViewProps = {
   onCloseConversation: () => void;
   onSendMessage: (formData: FormData, conversationId: number) => Promise<void>;
   onMessageDeleted?: () => void;
+  onError?: (message: string) => void;
+  onWarning?: (message: string) => void;
 };
 
 const ConversationView = ({
@@ -24,6 +26,8 @@ const ConversationView = ({
   onCloseConversation,
   onSendMessage,
   onMessageDeleted,
+  onError,
+  onWarning,
 }: ConversationViewProps) => {
   const borderColor = theme === 'dark' ? 'border-gray-900' : 'border-gray-300';
 
@@ -145,6 +149,8 @@ const ConversationView = ({
         userId={currentUserId}
         onSend={handleSend}
         theme={theme}
+        onError={onError}
+        onWarning={onWarning}
       />
     </>
   );

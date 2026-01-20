@@ -8,12 +8,16 @@ type UseConversationsProps = {
   currentUserId: number;
   onActiveTabChange?: (tab: 'all' | 'prive' | 'contacts' | 'groupe') => void;
   onConversationSelect?: (conversationId: number) => void;
+  onError?: (message: string) => void;
+  onWarning?: (message: string) => void;
 };
 
 export const useConversations = ({ 
   currentUserId, 
   onActiveTabChange,
-  onConversationSelect 
+  onConversationSelect,
+  onError,
+  onWarning
 }: UseConversationsProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -216,13 +220,17 @@ export const useConversations = ({
       console.log("Conversations enrichies avec les noms des interlocuteurs:", enrichedConversations.length);
       
       setConversations(enrichedConversations);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors du chargement des conversations:', error);
+      const errorMessage = error.response?.data?.status?.message || error.message || 'Erreur lors du chargement des conversations';
+      if (onError) {
+        onError(errorMessage);
+      }
       setConversations([]);
     } finally {
       setLoading(false);
     }
-  }, [currentUserId, filterConversationsByParticipant, enrichPrivateConversationsWithInterlocutorNames]);
+  }, [currentUserId, filterConversationsByParticipant, enrichPrivateConversationsWithInterlocutorNames, onError]);
 
   // Charger les conversations au montage
   useEffect(() => {
@@ -237,7 +245,11 @@ export const useConversations = ({
       // Éviter de créer une conversation avec soi-même
       if (contactId === currentUserId) {
         console.warn('Impossible de créer une conversation avec soi-même');
-        alert('Impossible de créer une conversation avec soi-même');
+        if (onWarning) {
+          onWarning('Impossible de créer une conversation avec soi-même');
+        } else {
+          alert('Impossible de créer une conversation avec soi-même');
+        }
         return;
       }
 
@@ -356,21 +368,35 @@ export const useConversations = ({
             }, 500);
           } else {
             console.error('Impossible de récupérer l\'ID de la conversation créée. Réponse complète:', response);
-            alert('Erreur: Impossible de récupérer l\'ID de la conversation créée');
+            if (onError) {
+              onError('Erreur: Impossible de récupérer l\'ID de la conversation créée');
+            } else {
+              alert('Erreur: Impossible de récupérer l\'ID de la conversation créée');
+            }
           }
         } catch (error: any) {
           console.error('Erreur lors de la création de la conversation:', error);
           console.error('Détails de l\'erreur:', error.response?.data || error.message);
-          alert(`Erreur lors de la création de la conversation: ${error.response?.data?.status?.message || error.message || 'Erreur inconnue'}`);
+          const errorMessage = `Erreur lors de la création de la conversation: ${error.response?.data?.status?.message || error.message || 'Erreur inconnue'}`;
+          if (onError) {
+            onError(errorMessage);
+          } else {
+            alert(errorMessage);
+          }
         } finally {
           setLoading(false);
         }
       }
     } catch (error: any) {
       console.error('Erreur lors de la sélection du contact:', error);
-      alert(`Erreur: ${error.message || 'Une erreur est survenue'}`);
+      const errorMessage = `Erreur: ${error.message || 'Une erreur est survenue'}`;
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        alert(errorMessage);
+      }
     }
-  }, [currentUserId, conversations, loadConversations, onConversationSelect, onActiveTabChange]);
+  }, [currentUserId, conversations, loadConversations, onConversationSelect, onActiveTabChange, onError, onWarning]);
 
   // Fonction pour mettre à jour une conversation dans la liste
   const updateConversation = useCallback((conversationId: number, updates: Partial<Conversation>) => {

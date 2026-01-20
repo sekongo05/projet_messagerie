@@ -7,6 +7,8 @@ interface MessageInputProps {
   userId: number;
   onSend: (formData: FormData) => Promise<void>;
   theme?: 'light' | 'dark';
+  onError?: (message: string) => void;
+  onWarning?: (message: string) => void;
 }
 
 const MessageInput = ({
@@ -14,6 +16,8 @@ const MessageInput = ({
   userId,
   onSend,
   theme = 'light',
+  onError,
+  onWarning,
 }: MessageInputProps) => {
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -32,7 +36,11 @@ const MessageInput = ({
 
     // Sécurité : image uniquement
     if (!file.type.startsWith("image/")) {
-      alert("Veuillez sélectionner une image");
+      if (onWarning) {
+        onWarning("Veuillez sélectionner une image");
+      } else {
+        alert("Veuillez sélectionner une image");
+      }
       return;
     }
 
@@ -45,7 +53,11 @@ const MessageInput = ({
     e.preventDefault();
 
     if (!content.trim() && !image) {
-      alert("Le message ne peut pas être vide");
+      if (onWarning) {
+        onWarning("Le message ne peut pas être vide");
+      } else {
+        alert("Le message ne peut pas être vide");
+      }
       return;
     }
 

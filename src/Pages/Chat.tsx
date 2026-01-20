@@ -84,6 +84,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     currentUserId,
     onActiveTabChange: setActiveTab,
     onConversationSelect: handleConversationSelect,
+    onError: showError,
+    onWarning: showWarning,
   });
 
   // Hook pour filtrer les conversations
@@ -99,6 +101,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     activeConversationId,
     currentUserId,
     onConversationUpdate: updateConversation,
+    onError: showError,
+    onWarning: showWarning,
   });
 
   const loading = conversationsLoading || messagesLoading;
@@ -116,6 +120,7 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           onLogout={handleLogout}
           onAddNewDiscussion={() => setActiveTab('contacts')}
           onAddNewGroup={() => setShowCreateGroupe(true)}
+          onError={showError}
         />
 
         {/* Onglets style WhatsApp */}
@@ -211,6 +216,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           onCloseConversation={handleCloseConversation}
           onSendMessage={handleSendMessage}
           onMessageDeleted={activeConversationId ? () => loadMessages(activeConversationId) : undefined}
+          onError={showError}
+          onWarning={showWarning}
         />
       </div>
 

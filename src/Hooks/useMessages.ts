@@ -7,9 +7,11 @@ type UseMessagesProps = {
   activeConversationId: number | null;
   currentUserId: number;
   onConversationUpdate?: (conversationId: number, updates: Partial<Conversation>) => void;
+  onError?: (message: string) => void;
+  onWarning?: (message: string) => void;
 };
 
-export const useMessages = ({ activeConversationId, currentUserId, onConversationUpdate }: UseMessagesProps) => {
+export const useMessages = ({ activeConversationId, currentUserId, onConversationUpdate, onError, onWarning }: UseMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -146,7 +148,11 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
     // Vérifier qu'il y a au moins du contenu texte ou une image
     if (!content?.trim() && !file) {
       console.error("Message vide : aucun contenu texte ni image");
-      alert("Le message ne peut pas être vide. Ajoutez du texte ou une image.");
+      if (onWarning) {
+        onWarning("Le message ne peut pas être vide. Ajoutez du texte ou une image.");
+      } else {
+        alert("Le message ne peut pas être vide. Ajoutez du texte ou une image.");
+      }
       return;
     }
 
@@ -195,7 +201,11 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
     } catch (error: any) {
       console.error("Erreur lors de l'envoi du message :", error);
       const errorMessage = error.response?.data?.status?.message || error.message || "Erreur lors de l'envoi du message";
-      alert(`Erreur : ${errorMessage}`);
+      if (onError) {
+        onError(`Erreur : ${errorMessage}`);
+      } else {
+        alert(`Erreur : ${errorMessage}`);
+      }
     }
   }, [currentUserId, loadMessages, onConversationUpdate]);
 
