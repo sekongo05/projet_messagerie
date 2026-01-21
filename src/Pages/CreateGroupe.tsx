@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { getUsers, type User } from '../Api/User.api';
 import { createConversation } from '../Api/ConversationCreate.api';
+import { createParticipant } from '../Api/createParticipantConversation.api';
 import axios from 'axios';
 import { FiLoader, FiX } from 'react-icons/fi';
 
@@ -112,14 +113,11 @@ const CreateGroupe = ({ currentUserId, onClose, onSuccess, theme: themeProp }: C
 
       // 2. Ajouter le créateur comme admin
       try {
-        await axios.post(`${API_URL}/participantConversation/create`, {
-          user: currentUserId,
-          datas: [{
-            conversationId: newConversationId,
-            userId: currentUserId,
-            isAdmin: true
-          }]
-        });
+        await createParticipant([{
+          conversationId: newConversationId,
+          userId: currentUserId,
+          isAdmin: true
+        }], currentUserId);
         console.log('Créateur ajouté comme admin');
       } catch (err: any) {
         console.error('Erreur lors de l\'ajout du créateur:', err);
@@ -134,10 +132,7 @@ const CreateGroupe = ({ currentUserId, onClose, onSuccess, theme: themeProp }: C
       }));
 
       try {
-        await axios.post(`${API_URL}/participantConversation/create`, {
-          user: currentUserId,
-          datas: participantsToAdd
-        });
+        await createParticipant(participantsToAdd, currentUserId);
         console.log('Participants ajoutés avec succès');
       } catch (err: any) {
         console.error('Erreur lors de l\'ajout des participants:', err);

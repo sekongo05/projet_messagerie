@@ -15,6 +15,7 @@ import { useConversations } from '../Hooks/useConversations';
 import { useMessages } from '../Hooks/useMessages';
 import { useConversationFilter } from '../Hooks/useConversationFilter';
 import { ToastContainer, useToast } from '../components/Toast';
+import NouveauContact from './NouveauContact';
 
 type ChatProps = {
   onNavigateToProfile?: () => void;
@@ -25,6 +26,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
   const [showCreateGroupe, setShowCreateGroupe] = useState(false);
+  const [showNouveauContact, setShowNouveauContact] = useState(false);
+  const [contactsRefreshTrigger, setContactsRefreshTrigger] = useState(0);
   const { toasts, removeToast, error: showError, success: showSuccess, warning: showWarning } = useToast();
 
   // Récupérer l'ID de l'utilisateur connecté depuis localStorage
@@ -50,7 +53,8 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   };
 
   // Mémoriser l'ID utilisateur pour éviter de le recalculer à chaque render
-  const currentUserId = useMemo(() => getCurrentUserId() || 1, []); // Fallback à 1 si non trouvé
+  const currentUserIdValue = useMemo(() => getCurrentUserId(), []);
+  const currentUserId = (currentUserIdValue ?? 1) as number; // Fallback temporaire pour éviter les erreurs de type
 
   // Gérer la sélection d'une conversation
   const handleConversationSelect = (conversationId: number) => {
@@ -146,10 +150,30 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
           </div>
         ) : activeTab === 'contacts' ? (
           // Toujours afficher les contacts, même s'il n'y a pas de conversations
-          <UserPage 
-            onUserSelect={handleContactSelect}
-            selectedUserId={undefined}
-          />
+          <div className="flex-1 flex flex-col">
+            <div className={`p-4 border-b ${borderColor} ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+              <button
+                onClick={() => setShowNouveauContact(true)}
+                className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  theme === 'dark'
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                    : 'bg-orange-500 hover:bg-orange-600 text-white'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nouveau contact
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <UserPage 
+                onUserSelect={handleContactSelect}
+                selectedUserId={undefined}
+                refreshTrigger={contactsRefreshTrigger}
+              />
+            </div>
+          </div>
         ) : !loading && filteredConversations.length === 0 && searchTerm.trim() ? (
           // Aucune conversation trouvée pour la recherche
           <ConversationEmptyState
@@ -234,6 +258,22 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
             setActiveTab('groupe');
           }}
           theme={theme}
+        />
+      )}
+
+      {/* Modal de création de contact */}
+      {showNouveauContact && (
+        <NouveauContact
+          onClose={() => setShowNouveauContact(false)}
+          onSuccess={() => {
+            // Recharger immédiatement la liste des contacts
+            setContactsRefreshTrigger(prev => prev + 1);
+            // Recharger aussi les conversations pour voir le nouveau contact
+            loadConversations();
+          }}
+          theme={theme}
+          onError={showError}
+          onSuccessToast={showSuccess}
         />
       )}
 

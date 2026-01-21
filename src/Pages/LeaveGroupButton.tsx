@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { FiLogOut } from 'react-icons/fi';
-import { leaveGroup } from '../Api/leaveGroup.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
+import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
+import {
+  normalizeParticipant,
+  getParticipantState,
+  canLeaveGroup
+} from '../utils/participantState.utils';
+import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
 
 type LeaveGroupButtonProps = {
   conversationId: number;
@@ -14,6 +21,8 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
   const [loading, setLoading] = useState(false);
+  const [participantState, setParticipantState] = useState<{ canLeave: boolean; status: string; isRejoined: boolean } | null>(null);
+  const [loadingState, setLoadingState] = useState(true);
 
   // Récupérer l'ID de l'utilisateur connecté
   const getCurrentUserId = (): number => {
@@ -36,11 +45,70 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
     return 1; // Fallback
   };
 
+  // Charger l'état du participant au montage
+  useEffect(() => {
+    const loadParticipantState = async () => {
+      try {
+        const currentUserId = getCurrentUserId();
+        const participantsResponse: any = await getParticipantsByConversationId(conversationId);
+        let participantsList: any[] = [];
+        
+        if (Array.isArray(participantsResponse)) {
+          participantsList = participantsResponse;
+        } else if (participantsResponse?.items) {
+          participantsList = participantsResponse.items;
+        } else if (participantsResponse?.data?.items) {
+          participantsList = participantsResponse.data.items;
+        } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+          participantsList = participantsResponse.data;
+        }
+
+        const currentParticipant = participantsList.find((p: any) => p.userId === currentUserId);
+        if (currentParticipant) {
+          const normalized = normalizeParticipant(currentParticipant);
+          const state = getParticipantState(normalized);
+          const canLeave = canLeaveGroup(normalized);
+          
+          setParticipantState({
+            canLeave,
+            status: state.status,
+            isRejoined: state.status === 'rejoined'
+          });
+        } else {
+          setParticipantState({ canLeave: false, status: 'not_found', isRejoined: false });
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement de l\'état du participant:', err);
+        setParticipantState({ canLeave: true, status: 'unknown', isRejoined: false }); // Par défaut, permettre de quitter
+      } finally {
+        setLoadingState(false);
+      }
+    };
+
+    loadParticipantState();
+  }, [conversationId]);
+
   const handleLeave = async () => {
     if (loading) return;
     
-    // Confirmation avant de quitter
-    if (!window.confirm('Êtes-vous sûr de vouloir quitter ce groupe ?')) {
+    // Vérifier si l'utilisateur peut quitter
+    if (participantState && !participantState.canLeave) {
+      const errorMsg = '⚠️ Vous ne pouvez pas quitter ce groupe car vous avez déjà quitté définitivement.';
+      if (onError) {
+        onError(errorMsg);
+      } else {
+        alert(errorMsg);
+      }
+      return;
+    }
+    
+    // Message de confirmation adapté selon l'état
+    let confirmMessage = 'Êtes-vous sûr de vouloir quitter ce groupe ?';
+    if (participantState?.isRejoined) {
+      confirmMessage = '⚠️ Attention : Ce sera votre 2ème départ. Vous ne pourrez plus revenir dans ce groupe. Êtes-vous sûr de vouloir quitter définitivement ?';
+    }
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
     
@@ -48,9 +116,33 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
     
     try {
       const currentUserId = getCurrentUserId();
-      const response = await leaveGroup(
-        conversationId,
-        currentUserId,
+      
+      // Charger l'état avant pour la validation
+      let participantBefore: any = null;
+      try {
+        const participantsResponse: any = await getParticipantsByConversationId(conversationId);
+        let participantsList: any[] = [];
+        
+        if (Array.isArray(participantsResponse)) {
+          participantsList = participantsResponse;
+        } else if (participantsResponse?.items) {
+          participantsList = participantsResponse.items;
+        } else if (participantsResponse?.data?.items) {
+          participantsList = participantsResponse.data.items;
+        } else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) {
+          participantsList = participantsResponse.data;
+        }
+        
+        participantBefore = participantsList.find((p: any) => p.userId === currentUserId);
+      } catch (err) {
+        console.warn('Impossible de charger l\'état avant pour la validation:', err);
+      }
+      
+      const response = await deleteParticipant(
+        {
+          conversationId: conversationId,
+          userId: currentUserId
+        },
         currentUserId
       );
       
@@ -86,6 +178,32 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
           alert(errorMessage);
         }
       } else {
+        // Sortie réussie - Vérifier que items existe et contient le participant mis à jour
+        if (response.items && response.items.length > 0) {
+          const updatedParticipant = response.items[0];
+          
+          // Validation : vérifier que la logique métier est respectée
+          if (typeof window !== 'undefined' && participantBefore) {
+            const participantBeforeNormalized = normalizeParticipant(participantBefore);
+            const validation = validateDeleteResponse(
+              participantBeforeNormalized,
+              updatedParticipant,
+              currentUserId
+            );
+            logValidation(validation, 'Quitter le groupe (LeaveGroupButton)');
+            
+            if (!validation.isValid) {
+              console.error('🚨 PROBLÈME BACKEND: La logique métier n\'est pas respectée lors de la sortie du groupe');
+              const state = getParticipantState(participantBeforeNormalized);
+              if (state.status === 'active') {
+                console.error('1er départ attendu: hasLeft=true, leftAt et leftBy remplis, isDeleted=true');
+              } else if (state.status === 'rejoined') {
+                console.error('2ème départ (définitif) attendu: hasDefinitivelyLeft=true, definitivelyLeftAt et definitivelyLeftBy remplis, hasCleaned=true');
+              }
+            }
+          }
+        }
+        
         // Sortie réussie
         if (onLeave) {
           onLeave();
@@ -146,8 +264,16 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
         <div className={`p-1.5 rounded-lg ${iconBg} backdrop-blur-sm relative z-10 group-hover:scale-110 transition-transform duration-300`}>
           <FiLogOut className="w-4 h-4 relative z-10" />
         </div>
-        <span className="text-sm relative z-10 tracking-wide">{loading ? 'Traitement...' : 'Quitter le groupe'}</span>
-      </button>
+          <span className="text-sm relative z-10 tracking-wide">
+            {loading ? 'Traitement...' : participantState?.isRejoined ? 'Quitter définitivement' : 'Quitter le groupe'}
+          </span>
+        </button>
+      )}
+      {participantState && !participantState.canLeave && (
+        <p className={`text-xs text-center mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          ⚠️ Vous avez déjà quitté définitivement ce groupe
+        </p>
+      )}
     </div>
   );
 };

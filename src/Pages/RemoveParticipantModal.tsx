@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
-import { leaveGroup } from '../Api/leaveGroup.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import { FiLoader, FiX, FiTrash2 } from 'react-icons/fi';
+import {
+  normalizeParticipant,
+  getParticipantState,
+  canManageAdminStatus
+} from '../utils/participantState.utils';
+import { logDiagnostic } from '../utils/participantStateDiagnostic.utils';
+import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
 
 type RemoveParticipantModalProps = {
   conversationId: number;
   conversationTitle: string;
   currentUserId: number;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (participant?: any) => void;
   theme?: 'light' | 'dark';
 };
 
@@ -21,6 +28,16 @@ type ParticipantWithUserInfo = {
   nom?: string;
   prenoms?: string;
   email?: string;
+  hasLeft?: boolean;
+  hasDefinitivelyLeft?: boolean;
+  hasCleaned?: boolean;
+  recreatedAt?: string;
+  recreatedBy?: number;
+  leftAt?: string;
+  leftBy?: number;
+  definitivelyLeftAt?: string;
+  definitivelyLeftBy?: number;
+  [key: string]: any;
 };
 
 const RemoveParticipantModal = ({ 
@@ -79,23 +96,28 @@ const RemoveParticipantModal = ({
 
       // 3. Mapper les participants avec leurs informations utilisateur
       const participantsWithUserInfo = participantsList.map((participant: any) => {
+        // Normaliser le participant
+        const normalizedParticipant = normalizeParticipant(participant);
         const userInfo = allUsers.find((u: User) => u.id === participant.userId);
-        const isAdmin = participant.isAdmin === true || participant.isAdmin === 1 || participant.isAdmin === 'true';
         
         return {
+          ...normalizedParticipant,
           id: participant.id,
           userId: participant.userId,
-          isAdmin: isAdmin,
           nom: userInfo?.nom || participant.nom || '',
           prenoms: userInfo?.prenoms || participant.prenoms || '',
           email: userInfo?.email || participant.email || '',
         };
       });
 
-      // Filtrer pour exclure l'utilisateur connecté (on ne peut pas se supprimer soi-même)
-      const filteredParticipants = participantsWithUserInfo.filter(
-        p => p.userId !== currentUserId
-      );
+      // Filtrer pour exclure l'utilisateur connecté et les participants définitivement partis
+      const filteredParticipants = participantsWithUserInfo.filter(p => {
+        if (p.userId === currentUserId) return false;
+        
+        // Ne pas afficher les participants définitivement partis
+        const state = getParticipantState(p);
+        return state.status !== 'definitively_left';
+      });
 
       setParticipants(filteredParticipants);
     } catch (err: any) {
@@ -121,15 +143,91 @@ const RemoveParticipantModal = ({
         throw new Error('Participant introuvable');
       }
 
-      // Utiliser leaveGroup avec conversationId, userId du participant, et currentUserId comme requestingUserId
-      await leaveGroup(conversationId, participant.userId, currentUserId);
+      // Utiliser deleteParticipant avec conversationId, userId du participant, et currentUserId comme requestingUserId
+      const response = await deleteParticipant(
+        {
+          conversationId: conversationId,
+          userId: participant.userId
+        },
+        currentUserId
+      );
       
-      // Retirer le participant de la liste locale
-      setParticipants(prev => prev.filter(p => p.id !== participantId));
+      console.log('Réponse complète après suppression de participant:', response);
+      console.log('Structure complète de la réponse:', JSON.stringify(response, null, 2));
       
-      // Si un callback de succès est fourni, l'appeler
-      if (onSuccess) {
-        onSuccess();
+      // ✅ Vérifier d'abord les erreurs
+      if (response.hasError) {
+        const errorCode = response.status?.code;
+        const errorMessage = response.status?.message || 'Erreur lors de la suppression du participant';
+        
+        console.error('Erreur fonctionnelle dans la réponse:', {
+          hasError: response.hasError,
+          code: errorCode,
+          status: response.status,
+          message: errorMessage,
+          fullResponse: response
+        });
+        
+        // Les messages d'erreur du backend sont déjà explicites et complets
+        // On les affiche directement à l'utilisateur
+        setError(errorMessage);
+        setDeletingId(null);
+        return;
+      }
+      
+      // ✅ Vérifier que items existe et contient au moins un élément
+      if (response.items && response.items.length > 0) {
+        const updatedParticipant = response.items[0];
+        
+        // Diagnostic : vérifier si le backend retourne les champs mis à jour après suppression
+        if (typeof window !== 'undefined') {
+          logDiagnostic(updatedParticipant, 'delete', 'Après suppression du participant');
+          
+          // Validation : vérifier que la logique métier est respectée
+          const validation = validateDeleteResponse(participant, updatedParticipant, currentUserId);
+          logValidation(validation, 'Retirer un participant du groupe');
+          
+          if (!validation.isValid) {
+            console.error('🚨 PROBLÈME BACKEND: La logique métier n\'est pas respectée lors de la suppression');
+            console.error('Le participant devrait avoir hasLeft=true, leftAt et leftBy remplis');
+          }
+        }
+        
+        console.log('Participant mis à jour après suppression:', updatedParticipant);
+        
+        // Logger les nouveaux états du participant
+        console.log('États du participant après suppression:', {
+          id: updatedParticipant.id,
+          userId: updatedParticipant.userId,
+          conversationId: updatedParticipant.conversationId,
+          hasLeft: updatedParticipant.hasLeft,
+          hasDefinitivelyLeft: updatedParticipant.hasDefinitivelyLeft,
+          hasCleaned: updatedParticipant.hasCleaned,
+          leftAt: updatedParticipant.leftAt,
+          leftBy: updatedParticipant.leftBy,
+          definitivelyLeftAt: updatedParticipant.definitivelyLeftAt,
+          definitivelyLeftBy: updatedParticipant.definitivelyLeftBy,
+          fullData: updatedParticipant
+        });
+        
+        // Retirer le participant de la liste locale
+        setParticipants(prev => prev.filter(p => p.id !== participantId));
+        
+        // ✅ Passer le participant mis à jour à onSuccess
+        if (onSuccess) {
+          onSuccess(updatedParticipant);
+        }
+      } else {
+        console.warn('Aucun participant retourné dans la réponse', {
+          hasItems: !!response.items,
+          itemsLength: response.items?.length,
+          fullResponse: response
+        });
+        // Retirer quand même de la liste locale même si pas de réponse
+        setParticipants(prev => prev.filter(p => p.id !== participantId));
+        if (onSuccess) {
+          onSuccess(undefined);
+        }
       }
     } catch (err: any) {
       console.error('Erreur lors de la suppression du participant:', err);
@@ -221,6 +319,32 @@ const RemoveParticipantModal = ({
                                 Admin
                               </span>
                             )}
+                            {/* Badge d'état du participant */}
+                            {(() => {
+                              const state = getParticipantState(participant);
+                              if (state.status === 'left_once') {
+                                return (
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    theme === 'dark'
+                                      ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-500/40'
+                                      : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                  }`}>
+                                    🟡 A quitté
+                                  </span>
+                                );
+                              } else if (state.status === 'rejoined') {
+                                return (
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    theme === 'dark'
+                                      ? 'bg-green-900/30 text-green-300 border border-green-500/40'
+                                      : 'bg-green-100 text-green-700 border border-green-300'
+                                  }`}>
+                                    🟢 Réintégré
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           {participant.email && (
                             <p className={`text-xs ${textSecondary} truncate`}>{participant.email}</p>

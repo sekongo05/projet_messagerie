@@ -115,10 +115,27 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
       setMessages(enrichedMessages);
 
       // Mettre à jour le lastMessageTime de la conversation avec le timestamp du dernier message
-      const lastMessage = getLastMessageFromMessages(messages);
+      // Utiliser enrichedMessages pour avoir le message final avec toutes les données normalisées
+      const lastMessage = getLastMessageFromMessages(enrichedMessages);
       if (lastMessage && onConversationUpdate) {
+        // Si le message a une image, afficher "📷 Image", sinon utiliser le contenu
+        let lastMessageText = lastMessage.content?.trim() || '';
+        if (lastMessage.messageImgUrl) {
+          // Message avec image
+          lastMessageText = lastMessageText 
+            ? `${lastMessageText} 📷` 
+            : '📷 Image';
+        }
+        
+        // S'assurer que lastMessageText n'est pas vide (pour les messages texte uniquement)
+        if (!lastMessageText && !lastMessage.messageImgUrl) {
+          // Si pas de contenu ni d'image, ne pas mettre à jour (cas inhabituel)
+          console.warn('Message sans contenu ni image:', lastMessage);
+          return;
+        }
+        
         onConversationUpdate(conversationId, {
-          lastMessage: lastMessage.content || undefined,
+          lastMessage: lastMessageText,
           lastMessageTime: lastMessage.createdAt,
         } as Partial<Conversation>);
       }
@@ -185,15 +202,23 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
       }
 
       // Mettre à jour immédiatement la conversation dans la liste avec le nouveau message
-      const lastMessageText = content?.trim() || (file ? "📷 Image" : "");
-      if (onConversationUpdate) {
+      let lastMessageText = content?.trim() || '';
+      if (file && created.messageImgUrl) {
+        // Message avec image
+        lastMessageText = lastMessageText 
+          ? `${lastMessageText} 📷` 
+          : '📷 Image';
+      }
+      
+      if (onConversationUpdate && (lastMessageText || file)) {
         onConversationUpdate(conversationId, {
-          lastMessage: lastMessageText,
+          lastMessage: lastMessageText || (file ? "📷 Image" : ""),
           lastMessageTime: created.createdAt,
         } as Partial<Conversation>);
       }
 
-      // Recharger les messages après envoi
+      // Recharger les messages après envoi pour synchroniser avec le backend
+      // Cela va aussi mettre à jour le lastMessage avec les données complètes du backend
       await loadMessages(conversationId);
       
       // Note: On ne recharge plus toutes les conversations car loadMessages 

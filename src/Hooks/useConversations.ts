@@ -3,6 +3,7 @@ import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { createConversation } from '../Api/ConversationCreate.api';
 import { getUsers, type User } from '../Api/User.api';
+import { shouldDisplayConversation, normalizeParticipant } from '../utils/participantState.utils';
 
 type UseConversationsProps = {
   currentUserId: number;
@@ -56,15 +57,14 @@ export const useConversations = ({
           (participant: any) => participant.userId === userId
         );
 
-        // Si l'utilisateur est participant ET n'a pas hasCleaned = true
-        // hasCleaned = true signifie que l'utilisateur a supprimé/nettoyé la conversation
+        // Si l'utilisateur est participant, vérifier si la conversation doit être affichée
+        // Utilise shouldDisplayConversation qui vérifie hasCleaned
         if (userParticipant) {
-          const hasCleaned = userParticipant.hasCleaned === true 
-            || userParticipant.hasCleaned === 1 
-            || userParticipant.hasCleaned === 'true';
+          // Normaliser le participant pour avoir les valeurs booléennes correctes
+          const normalizedParticipant = normalizeParticipant(userParticipant);
           
-          // Exclure les conversations où l'utilisateur a hasCleaned = true
-          if (!hasCleaned) {
+          // Exclure les conversations où l'utilisateur a nettoyé la conversation
+          if (shouldDisplayConversation(normalizedParticipant)) {
             filteredConversations.push(conversation);
           }
         }
@@ -201,13 +201,16 @@ export const useConversations = ({
     setLoading(true);
     try {
       if (!currentUserId) {
-        console.warn('Aucun utilisateur connecté trouvé');
+        console.warn('Aucun utilisateur connecté trouvé, impossible de charger les conversations');
+        if (onError) {
+          onError('Vous devez être connecté pour voir vos conversations');
+        }
         setConversations([]);
         return;
       }
 
       // Charger toutes les conversations
-      const response: any = await getConversations();
+      const response: any = await getConversations(currentUserId);
       const allConversations: Conversation[] = response?.items || [];
       console.log("Conversations chargées:", allConversations.length);
 

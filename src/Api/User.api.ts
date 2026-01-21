@@ -15,7 +15,7 @@ export type User = {
 
 export const getUsers = async (userId?: number) => {
   // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
-  const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
+  const resolvedUserId = userId ?? getCurrentUserId();
   
   if (!resolvedUserId) {
     throw new Error('ID utilisateur requis. Veuillez vous connecter.');

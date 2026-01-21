@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getUsers, type User } from '../../Api/User.api';
+import { getCurrentUserId } from '../../utils/user.utils';
 import { FiLoader } from "react-icons/fi";
 
 type UserItemProps = {
@@ -93,13 +94,15 @@ type UserListContainerProps = {
   selectedUserId?: number;
   theme?: 'light' | 'dark';
   userId?: number;
+  refreshTrigger?: number;
 };
 
 export const UserListContainer = ({
   onUserSelect,
   selectedUserId,
   theme = 'light',
-  userId = 1,
+  userId,
+  refreshTrigger,
 }: UserListContainerProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,13 +110,23 @@ export const UserListContainer = ({
 
   useEffect(() => {
     loadUsers();
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 
   const loadUsers = async () => {
+    // Utiliser le userId fourni en prop, ou récupérer celui de l'utilisateur connecté
+    const currentUserId = userId ?? getCurrentUserId();
+    
+    if (!currentUserId) {
+      setError('Vous devez être connecté pour voir les utilisateurs');
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const response: any = await getUsers(userId);
+      const response: any = await getUsers(currentUserId);
       const usersList: User[] = response?.items || [];
       
       // Filtrer les utilisateurs non supprimés

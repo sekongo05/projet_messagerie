@@ -4,11 +4,13 @@ import { useTheme } from '../mode';
 type UserPageProps = {
   onUserSelect?: (userId: number) => void;
   selectedUserId?: number;
+  refreshTrigger?: number;
 };
 
 const UserPage = ({ 
   onUserSelect, 
-  selectedUserId 
+  selectedUserId,
+  refreshTrigger
 }: UserPageProps = {}) => {
   const { theme } = useTheme();
 
@@ -17,6 +19,7 @@ const UserPage = ({
       onUserSelect={onUserSelect}
       selectedUserId={selectedUserId}
       theme={theme}
+      refreshTrigger={refreshTrigger}
     />
   );
 };

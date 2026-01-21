@@ -81,6 +81,21 @@ export const MessageItem = ({
 
   const time = formatTime(message.createdAt);
 
+  // Fonction utilitaire pour vérifier si le message a une image valide
+  const hasValidImage = (): boolean => {
+    const imgUrl = message.messageImgUrl;
+    return !!(
+      imgUrl && 
+      imgUrl !== 'null' && 
+      imgUrl !== '' && 
+      imgUrl !== null && 
+      typeof imgUrl === 'string' &&
+      imgUrl.trim() !== ''
+    );
+  };
+
+  const messageHasImage = hasValidImage();
+
   const handleDeleteForMe = async () => {
     console.log('handleDeleteForMe appelé', { 
       messageId: message.id, 
@@ -173,9 +188,9 @@ export const MessageItem = ({
         {/* Bulle de message style WhatsApp */}
         <div
           className={`relative rounded-2xl ${
-            message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && !message.content
+            messageHasImage && !message.content
               ? 'p-0' // Pas de padding pour les images seules
-              : message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && message.content
+              : messageHasImage && message.content
               ? 'p-0' // Pas de padding pour les messages mixtes, on gère le padding dans les éléments
               : 'px-3 py-1.5' // Padding normal pour texte seul
           } ${
@@ -198,7 +213,7 @@ export const MessageItem = ({
             onDelete={handleDelete}
           />
           {/* Image - Format moyen style WhatsApp */}
-          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && (
+          {messageHasImage && (
             <div className={`relative group/image overflow-hidden ${
               message.content ? 'rounded-t-lg' : 'rounded-lg'
             } ${
@@ -210,9 +225,9 @@ export const MessageItem = ({
                 ? 'border border-gray-700/40'
                 : 'border border-gray-300/40'
             }`}
-            style={{ overflow: 'hidden' }}>
+            style={{ overflow: 'hidden', display: 'block' }}>
               <img
-                src={message.messageImgUrl}
+                src={(message.messageImgUrl ?? '') as string}
                 alt="Message"
                 loading="lazy"
                 onError={(e) => {
@@ -266,13 +281,19 @@ export const MessageItem = ({
           {/* Contenu texte - Affiché après l'image si elle existe */}
           {message.content && (
             <div className={`flex items-end gap-2 ${
-              message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null
+              messageHasImage
                 ? 'px-3 pt-2 pb-1' // Padding pour messages mixtes
                 : '' // Pas de padding supplémentaire pour texte seul (déjà dans la bulle)
             }`}>
-              <p className="break-words text-sm leading-relaxed flex-1">{message.content}</p>
+              <p className={`break-words text-sm leading-relaxed flex-1 ${
+                isOwnMessage
+                  ? 'text-white'
+                  : theme === 'dark'
+                  ? 'text-gray-100'
+                  : 'text-gray-900'
+              }`}>{message.content}</p>
               {/* Timestamp à côté du texte (affiché seulement si pas d'image, sinon affiché en bas) */}
-              {time && (!message.messageImgUrl || message.messageImgUrl === 'null' || message.messageImgUrl === '' || message.messageImgUrl === null) && (
+              {time && !messageHasImage && (
                 <span
                   className={`text-[11px] leading-none shrink-0 ${
                     isOwnMessage
@@ -289,7 +310,7 @@ export const MessageItem = ({
           )}
           
           {/* Timestamp global en bas pour messages avec image + texte */}
-          {message.messageImgUrl && message.messageImgUrl !== 'null' && message.messageImgUrl !== '' && message.messageImgUrl !== null && message.content && time && (
+          {messageHasImage && message.content && time && (
             <div className="flex items-end justify-end gap-1 px-3 pb-1.5">
               <span
                 className={`text-[11px] leading-none ${

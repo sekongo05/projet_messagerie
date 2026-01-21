@@ -2,17 +2,22 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../mode';
 import { getUsers, type User } from '../Api/User.api';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
+import { createParticipant } from '../Api/createParticipantConversation.api';
 import { FiLoader, FiX } from 'react-icons/fi';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:8080';
+import {
+  normalizeParticipant,
+  getParticipantState,
+  canRejoinParticipant
+} from '../utils/participantState.utils';
+import { logDiagnostic, diagnoseMultipleParticipants } from '../utils/participantStateDiagnostic.utils';
+import { validateCreateResponse, logValidation } from '../utils/participantStateValidation.utils';
 
 type AddParticipantsModalProps = {
   conversationId: number;
   conversationTitle: string;
   currentUserId: number;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (participants?: any[]) => void;
   theme?: 'light' | 'dark';
 };
 
@@ -32,6 +37,11 @@ const AddParticipantsModal = ({
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [error, setError] = useState('');
   const [existingParticipantIds, setExistingParticipantIds] = useState<number[]>([]);
+  const [existingParticipants, setExistingParticipants] = useState<Array<{
+    userId: number;
+    normalized: any;
+    state: any;
+  }>>([]);
 
   // Charger la liste des contacts et les participants existants
   useEffect(() => {
@@ -69,15 +79,45 @@ const AddParticipantsModal = ({
         participantsList = participantsResponse.data;
       }
 
-      // Extraire les IDs des participants existants
-      const existingIds = participantsList.map((p: any) => p.userId).filter((id: any) => id);
-      setExistingParticipantIds(existingIds);
+      // Extraire les IDs des participants existants avec leurs états
+      const existingParticipants = participantsList.map((p: any) => {
+        const normalized = normalizeParticipant(p);
+        const state = getParticipantState(normalized);
+        return {
+          userId: p.userId,
+          normalized,
+          state
+        };
+      });
       
-      // Filtrer pour exclure l'utilisateur connecté, les utilisateurs supprimés et les participants existants
+      // Déterminer les participants qui ne peuvent PAS être ajoutés/réintégrés
+      // Ils doivent être exclus de la liste des contacts disponibles :
+      // 1. Participants actifs (hasLeft=false) - déjà dans le groupe
+      // 2. Participants réintégrés (hasLeft=true, recreatedAt!=null) - ne peuvent pas être réintégrés à nouveau
+      // 3. Participants définitivement partis (hasDefinitivelyLeft=true) - ne peuvent plus être réintégrés
+      const cannotBeAddedIds = existingParticipants
+        .filter(p => {
+          const status = p.state.status;
+          // Exclure : actifs, réintégrés, et définitivement partis
+          return status === 'active' || status === 'rejoined' || status === 'definitively_left';
+        })
+        .map(p => p.userId)
+        .filter((id: any) => id);
+      
+      // Les participants avec status 'left_once' peuvent être réintégrés UNE SEULE FOIS
+      // Donc on ne les exclut pas de la liste
+      
+      setExistingParticipantIds(cannotBeAddedIds);
+      setExistingParticipants(existingParticipants);
+      
+      // Filtrer pour exclure :
+      // - L'utilisateur connecté
+      // - Les utilisateurs supprimés
+      // - Les participants qui ne peuvent pas être ajoutés (actifs, réintégrés, définitivement partis)
       const filteredContacts = usersList.filter(
         user => !user.isDeleted && 
                 user.id !== currentUserId && 
-                !existingIds.includes(user.id || 0)
+                !cannotBeAddedIds.includes(user.id || 0)
       );
       
       setContacts(filteredContacts);
@@ -106,6 +146,21 @@ const AddParticipantsModal = ({
       return;
     }
 
+    // Vérification supplémentaire : s'assurer qu'on n'essaie pas d'ajouter quelqu'un qui ne peut pas l'être
+    const invalidContacts = selectedContacts.filter(userId => {
+      const participant = existingParticipants.find(p => p.userId === userId);
+      if (!participant) return false; // Nouveau participant, OK
+      
+      const status = participant.state.status;
+      // Ne peut pas ajouter si : actif, réintégré, ou définitivement parti
+      return status === 'active' || status === 'rejoined' || status === 'definitively_left';
+    });
+    
+    if (invalidContacts.length > 0) {
+      setError('⚠️ Certains participants sélectionnés ne peuvent pas être ajoutés (déjà actifs, réintégrés, ou définitivement partis). Veuillez rafraîchir la liste.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -116,21 +171,148 @@ const AddParticipantsModal = ({
         isAdmin: false
       }));
 
-      await axios.post(`${API_URL}/participantConversation/create`, {
-        user: currentUserId,
-        datas: participantsToAdd
-      });
+      console.log('Tentative d\'ajout de participants:', participantsToAdd);
       
-      console.log('Participants ajoutés avec succès');
+      const response = await createParticipant(participantsToAdd, currentUserId);
       
-      // Succès
-      if (onSuccess) {
-        onSuccess();
+      console.log('Réponse reçue après ajout de participants dans AddParticipantsModal:', response);
+      console.log('Structure complète de la réponse:', JSON.stringify(response, null, 2));
+      
+      // ✅ Vérifier d'abord les erreurs
+      if (response.hasError) {
+        const errorCode = response.status?.code;
+        const errorMessage = response.status?.message || 'Erreur lors de l\'ajout des participants';
+        
+        console.error('Erreur fonctionnelle dans la réponse:', {
+          hasError: response.hasError,
+          code: errorCode,
+          status: response.status,
+          message: errorMessage,
+          fullResponse: response
+        });
+        
+        // Les messages d'erreur du backend sont déjà explicites et complets
+        // On les affiche directement à l'utilisateur
+        setError(errorMessage);
+        setLoading(false);
+        return;
       }
+      
+      // ✅ Vérifier que items existe et n'est pas vide
+      if (response.items && response.items.length > 0) {
+        console.log('Participants ajoutés/réintégrés:', response.items);
+        
+        // Diagnostic : vérifier si le backend retourne tous les champs après création/réintégration
+        if (typeof window !== 'undefined') {
+          const globalDiagnostic = diagnoseMultipleParticipants(response.items, 'create');
+          console.log(globalDiagnostic.summary);
+          response.items.forEach((participant, index) => {
+            logDiagnostic(participant, 'create', `Participant ${index + 1}`);
+            
+            // Validation : vérifier que la logique métier est respectée
+            // Trouver l'état avant (si le participant existait déjà)
+            const userId = participant.userId;
+            const participantBefore = existingParticipants.find(
+              p => p.userId === userId
+            )?.normalized || null;
+            
+            const validation = validateCreateResponse(participantBefore, participant, currentUserId);
+            logValidation(validation, `Ajout/Réintégration participant ${index + 1} (userId: ${userId})`);
+            
+            if (!validation.isValid) {
+              console.error(`🚨 PROBLÈME BACKEND: La logique métier n'est pas respectée pour le participant ${index + 1}`);
+              if (participantBefore) {
+                console.error('Réintégration attendue: hasLeft=true (reste à true), isDeleted=false, recreatedAt et recreatedBy remplis');
+              } else {
+                console.error('Nouveau participant attendu: hasLeft=false');
+              }
+            }
+          });
+        }
+        
+        // Logger les états de chaque participant
+        response.items.forEach((participant, index) => {
+          // Log de toute la structure de l'objet participant
+          console.log(`=== Structure complète du participant ${index + 1} ===`);
+          console.log('Toutes les clés de l\'objet participant:', Object.keys(participant));
+          console.log('Participant complet (JSON):', JSON.stringify(participant, null, 2));
+          console.log('Participant complet (objet):', participant);
+          
+          // Chercher toutes les clés contenant "recreate", "left", "by"
+          const allKeys = Object.keys(participant);
+          const relevantKeys = allKeys.filter(key => 
+            key.toLowerCase().includes('recreate') || 
+            key.toLowerCase().includes('left') || 
+            key.toLowerCase().includes('by') ||
+            key.toLowerCase().includes('at')
+          );
+          console.log('Clés pertinentes trouvées:', relevantKeys);
+          
+          // Vérifier les variations possibles de noms
+          const recreateVariations = {
+            'recreatedBy': participant.recreatedBy,
+            'recreateBy': participant.recreateBy,
+            'recreated_by': participant.recreated_by,
+            'recreate_by': participant.recreate_by,
+            'createdBy': participant.createdBy,
+            'created_by': participant.created_by,
+          };
+          console.log('Variations possibles de recreatedBy:', recreateVariations);
+          
+          console.log(`Participant ${index + 1} - Résumé:`, {
+            id: participant.id,
+            userId: participant.userId,
+            conversationId: participant.conversationId,
+            hasLeft: participant.hasLeft,
+            hasDefinitivelyLeft: participant.hasDefinitivelyLeft,
+            hasCleaned: participant.hasCleaned,
+            recreatedAt: participant.recreatedAt,
+            recreatedBy: participant.recreatedBy,
+            leftAt: participant.leftAt,
+            leftBy: participant.leftBy,
+            definitivelyLeftAt: participant.definitivelyLeftAt,
+            definitivelyLeftBy: participant.definitivelyLeftBy,
+            isAdmin: participant.isAdmin,
+          });
+          
+          // Vérification spécifique pour recreatedBy
+          console.log(`⚠️ Vérification détaillée recreatedBy pour participant ${index + 1}:`, {
+            'participant.recreatedBy': participant.recreatedBy,
+            'participant.recreateBy': participant.recreateBy,
+            'participant.recreated_by': participant.recreated_by,
+            'Type': typeof participant.recreatedBy,
+            'Est défini': participant.recreatedBy !== undefined,
+            'Est null': participant.recreatedBy === null,
+            'Valeur': participant.recreatedBy,
+            'ID utilisateur qui a fait la requête': currentUserId,
+            'recreatedAt présent': !!participant.recreatedAt,
+            'recreated_at présent': !!participant.recreated_at,
+            'Reintégration détectée': !!participant.recreatedAt || !!participant.recreated_at || participant.hasLeft === false
+          });
+        });
+        
+        // ✅ Passer les participants à onSuccess
+        if (onSuccess) {
+          onSuccess(response.items);
+        }
+      } else {
+        console.warn('Aucun participant retourné dans la réponse', {
+          hasItems: !!response.items,
+          itemsLength: response.items?.length,
+          fullResponse: response
+        });
+      }
+      
       onClose();
     } catch (err: any) {
-      console.error('Erreur lors de l\'ajout des participants:', err);
-      setError(err.response?.data?.status?.message || err.message || 'Erreur lors de l\'ajout des participants');
+      console.error('Erreur lors de l\'ajout des participants dans AddParticipantsModal:', err);
+      console.error('Détails de l\'erreur:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        fullError: err
+      });
+      setError(err.message || 'Erreur lors de l\'ajout des participants');
     } finally {
       setLoading(false);
     }
@@ -197,6 +379,11 @@ const AddParticipantsModal = ({
                       ? `${contact.prenoms} ${contact.nom}`
                       : contact.prenoms || contact.nom || contact.email || 'Contact';
                     const initials = (contact.prenoms?.charAt(0) || '') + (contact.nom?.charAt(0) || '');
+                    
+                    // Vérifier si ce contact était un participant qui a quitté (pour afficher un indicateur)
+                    const previousParticipant = existingParticipants.find(
+                      p => p.userId === contact.id && (p.state.status === 'left_once' || p.state.status === 'rejoined')
+                    );
 
                     return (
                       <label
@@ -224,7 +411,22 @@ const AddParticipantsModal = ({
                           {initials || fullName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-medium ${textPrimary} truncate`}>{fullName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className={`font-medium ${textPrimary} truncate`}>{fullName}</p>
+                            {previousParticipant && (
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                previousParticipant.state.status === 'left_once'
+                                  ? theme === 'dark'
+                                    ? 'bg-yellow-900/30 text-yellow-300'
+                                    : 'bg-yellow-100 text-yellow-700'
+                                  : theme === 'dark'
+                                  ? 'bg-green-900/30 text-green-300'
+                                  : 'bg-green-100 text-green-700'
+                              }`}>
+                                {previousParticipant.state.status === 'left_once' ? '🟡 A quitté' : '🟢 Réintégration'}
+                              </span>
+                            )}
+                          </div>
                           {contact.email && (
                             <p className={`text-xs ${textSecondary} truncate`}>{contact.email}</p>
                           )}

@@ -3,6 +3,12 @@ import { getCurrentUserId } from '../utils/user.utils';
 
 const API_URL = 'http://localhost:8080';
 
+export type ParticipantToAdd = {
+  conversationId: number;
+  userId: number;
+  isAdmin?: boolean;
+};
+
 export type ParticipantState = {
   hasLeft?: boolean;
   hasDefinitivelyLeft?: boolean;
@@ -16,9 +22,8 @@ export type ParticipantState = {
   [key: string]: any;
 };
 
-
-export const deleteParticipant = async (
-  options: { participantId?: number; conversationId?: number; userId?: number },
+export const createParticipant = async (
+  participants: ParticipantToAdd[],
   requestingUserId?: number
 ) => {
   // Déterminer l'ID de l'utilisateur qui fait la requête
@@ -28,40 +33,37 @@ export const deleteParticipant = async (
     throw new Error('ID utilisateur requis. Veuillez vous connecter.');
   }
 
-  // Préparer le payload selon le format utilisé
-  let payloadData: any;
-
-  if (options.participantId !== undefined) {
-    // Format 1 : Utilisation de participantId (ID de la relation)
-    payloadData = { id: options.participantId };
-  } else if (options.conversationId !== undefined && options.userId !== undefined) {
-    // Format 2 : Utilisation de conversationId + userId
-    payloadData = {
-      conversationId: options.conversationId,
-      userId: options.userId
-    };
-  } else {
-    throw new Error('Format invalide : fournissez soit participantId, soit conversationId + userId');
+  if (!participants || participants.length === 0) {
+    throw new Error('Au moins un participant est requis.');
   }
 
   try {
     const response = await axios.post(
-      `${API_URL}/participantConversation/delete`,
+      `${API_URL}/participantConversation/create`,
       {
         user: resolvedRequestingUserId,
-        datas: [payloadData]
+        datas: participants
       }
     );
+
+    // Logger la réponse complète du backend
+    console.log('Réponse complète du backend lors de l\'ajout de participants:', response.data);
+   
 
     // Vérifier si la réponse contient une erreur fonctionnelle
     if (response.data.hasError) {
       const errorMessage = response.data.status?.message 
-        || 'Erreur lors de la suppression du participant';
-      console.error('Erreur fonctionnelle:', errorMessage);
+        || 'Erreur lors de l\'ajout des participants';
+      console.error('Erreur fonctionnelle dans la réponse:', {
+        hasError: response.data.hasError,
+        status: response.data.status,
+        message: errorMessage,
+        fullResponse: response.data
+      });
       throw new Error(errorMessage);
     }
 
-    console.log("Participant supprimé :", response.data);
+    console.log('Participants ajoutés avec succès. Réponse:', response.data);
     return response.data;
 
   } catch (error: any) {
@@ -75,13 +77,13 @@ export const deleteParticipant = async (
       const errorMessage = error.response?.data?.status?.message 
         || error.response?.data?.message 
         || error.message 
-        || 'Erreur lors de la suppression du participant';
+        || 'Erreur lors de l\'ajout des participants';
       
-      console.error('Erreur API lors de la suppression du participant:', errorMessage);
+      console.error('Erreur API lors de l\'ajout des participants:', errorMessage);
       throw new Error(errorMessage);
     }
     
-    console.error('Erreur lors de la suppression du participant', error);
+    console.error('Erreur lors de l\'ajout des participants', error);
     throw error;
   }
 };

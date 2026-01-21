@@ -6,9 +6,19 @@ import { FiCalendar, FiHash, FiUsers, FiChevronDown, FiUserPlus, FiUserMinus, Fi
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { getUsers, type User } from '../Api/User.api';
 import { promoteAdmin } from '../Api/PromoteAdmin.api';
-import { leaveGroup } from '../Api/leaveGroup.api';
+import { deleteParticipant } from '../Api/deleteParticipantConversation.api';
 import AddParticipantsModal from './AddParticipantsModal';
 import RemoveParticipantModal from './RemoveParticipantModal';
+import {
+  normalizeParticipant,
+  getParticipantState,
+  canLeaveGroup,
+  getParticipantStatusMessage,
+  type ParticipantState
+} from '../utils/participantState.utils';
+import { logDiagnostic } from '../utils/participantStateDiagnostic.utils';
+import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
+import { getCurrentUserId as getCurrentUserIdFromUtils } from '../utils/user.utils';
 
 type InfoGroupeProps = {
   conversation: Conversation;
@@ -17,11 +27,22 @@ type InfoGroupeProps = {
 
 type ParticipantUser = {
   id: number;
+  conversationId?: number;
   nom?: string;
   prenoms?: string;
   email?: string;
   userId: number;
   isAdmin?: boolean;
+  isDeleted?: boolean;
+  hasLeft?: boolean;
+  hasDefinitivelyLeft?: boolean;
+  hasCleaned?: boolean;
+  recreatedAt?: string | null;
+  recreatedBy?: number | null;
+  leftAt?: string | null;
+  leftBy?: number | null;
+  definitivelyLeftAt?: string | null;
+  definitivelyLeftBy?: number | null;
   [key: string]: any;
 };
 
@@ -50,24 +71,8 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   };
 
   // Récupérer l'ID de l'utilisateur connecté
-  const getCurrentUserId = useCallback((): number => {
-    try {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        if (parsed.id) return parsed.id;
-      }
-      
-      const currentUser = localStorage.getItem('currentUser');
-      if (currentUser) {
-        const parsed = JSON.parse(currentUser);
-        if (parsed.id) return parsed.id;
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
-    }
-    
-    return 1; // Fallback
+  const getCurrentUserId = useCallback((): number | null => {
+    return getCurrentUserIdFromUtils();
   }, []);
 
   // Charger les participants d'une conversation
@@ -104,8 +109,16 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
       }
 
       // Récupérer tous les utilisateurs pour obtenir leurs noms et prénoms
+      const currentUserId = getCurrentUserId();
+      if (!currentUserId) {
+        console.error('ID utilisateur non disponible. Impossible de charger les utilisateurs.');
+        setParticipants([]);
+        setLoadingParticipants(false);
+        return;
+      }
+      
       console.log('Chargement de tous les utilisateurs...');
-      const usersResponse: any = await getUsers(1);
+      const usersResponse: any = await getUsers(currentUserId);
       console.log('Réponse complète des utilisateurs:', usersResponse);
       
       let allUsers: User[] = [];
@@ -125,36 +138,54 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
       // Mapper les participants avec leurs informations utilisateur
       const participantsWithUserInfo = participantsList.map((participant: any) => {
         console.log('Traitement du participant depuis ParticipantConversation API:', participant);
+        console.log('Toutes les clés du participant dans loadParticipants:', Object.keys(participant));
+        console.log('Participant complet dans loadParticipants:', JSON.stringify(participant, null, 2));
+        
+        // Chercher toutes les clés contenant "recreate", "left", "by", "at"
+        const allKeys = Object.keys(participant);
+        const relevantKeys = allKeys.filter(key => 
+          key.toLowerCase().includes('recreate') || 
+          key.toLowerCase().includes('left') || 
+          key.toLowerCase().includes('by') ||
+          key.toLowerCase().includes('at') ||
+          key.toLowerCase().includes('clean')
+        );
+        console.log('Clés pertinentes trouvées dans loadParticipants:', relevantKeys);
+        
         const userInfo = allUsers.find((u: User) => u.id === participant.userId);
         console.log('UserInfo trouvé pour userId', participant.userId, ':', userInfo);
         
-        // Extraire isAdmin depuis les données du participant de l'API ParticipantConversation
-        // L'API ParticipantConversation retourne directement isAdmin dans les données du participant
-        const isAdmin = participant.isAdmin === true || participant.isAdmin === 1 || participant.isAdmin === 'true';
-        console.log('isAdmin extrait du participant:', isAdmin, '(valeur brute:', participant.isAdmin, ')');
+        // Normaliser le participant pour avoir toutes les valeurs booléennes correctes
+        const normalizedParticipant = normalizeParticipant(participant);
+        
+        console.log('Participant normalisé:', normalizedParticipant);
+        
+        // Obtenir l'état du participant
+        const participantState = getParticipantState(normalizedParticipant);
+        console.log('État du participant déterminé:', participantState);
         
         return {
-          ...participant,
+          ...normalizedParticipant,
           nom: userInfo?.nom || participant.nom || '',
           prenoms: userInfo?.prenoms || participant.prenoms || '',
           email: userInfo?.email || participant.email || '',
-          isAdmin: isAdmin,
         };
       });
 
       console.log('Participants avec informations utilisateur:', participantsWithUserInfo);
       setParticipants(participantsWithUserInfo);
 
-      // Vérifier si l'utilisateur connecté est admin
-      const currentUserId = getCurrentUserId();
-      const currentUserParticipant = participantsWithUserInfo.find(
-        (p) => p.userId === currentUserId
-      );
-      if (currentUserParticipant) {
-        const isAdmin = currentUserParticipant.isAdmin === true || 
-                       currentUserParticipant.isAdmin === 1 || 
-                       currentUserParticipant.isAdmin === 'true';
-        setCurrentUserIsAdmin(isAdmin);
+      // Vérifier si l'utilisateur connecté est admin (utiliser la variable déjà déclarée)
+      if (currentUserId !== null) {
+        const currentUserParticipant = participantsWithUserInfo.find(
+          (p) => p.userId === currentUserId
+        );
+        if (currentUserParticipant) {
+          // Utiliser la valeur normalisée depuis normalizeParticipant
+          setCurrentUserIsAdmin(currentUserParticipant.isAdmin || false);
+        } else {
+          setCurrentUserIsAdmin(false);
+        }
       } else {
         setCurrentUserIsAdmin(false);
       }
@@ -206,17 +237,42 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   const createdAt = conv.createdAt || conv.dateCreation || null;
 
 
-  // Trier les participants : admins en premier, puis membres
+  // Trier les participants : admins en premier, puis membres actifs, puis ceux qui ont quitté
   const sortedParticipants = useMemo(() => {
-    return [...participants].sort((a, b) => {
-      // Si a est admin et b ne l'est pas, a vient en premier
-      if (a.isAdmin && !b.isAdmin) return -1;
-      // Si b est admin et a ne l'est pas, b vient en premier
-      if (!a.isAdmin && b.isAdmin) return 1;
-      // Sinon, garder l'ordre initial (ou trier par nom si souhaité)
-      return 0;
-    });
-  }, [participants]);
+    return [...participants]
+      .map(p => {
+        const normalized = normalizeParticipant(p);
+        return {
+          ...p,
+          ...normalized,
+          // S'assurer que conversationId et isDeleted sont présents
+          conversationId: normalized.conversationId ?? p.conversationId ?? conversation.id,
+          isDeleted: normalized.isDeleted ?? false,
+          // S'assurer que les types correspondent
+          recreatedAt: normalized.recreatedAt ?? undefined,
+          recreatedBy: normalized.recreatedBy ?? undefined,
+          leftAt: normalized.leftAt ?? undefined,
+          leftBy: normalized.leftBy ?? undefined,
+          definitivelyLeftAt: normalized.definitivelyLeftAt ?? undefined,
+          definitivelyLeftBy: normalized.definitivelyLeftBy ?? undefined,
+        } as ParticipantUser;
+      })
+      .sort((a, b) => {
+        // Si a est admin et b ne l'est pas, a vient en premier
+        if (a.isAdmin && !b.isAdmin) return -1;
+        // Si b est admin et a ne l'est pas, b vient en premier
+        if (!a.isAdmin && b.isAdmin) return 1;
+        // Ensuite, trier par statut : actifs en premier, puis ceux qui ont quitté
+        // S'assurer que conversationId et isDeleted sont présents pour getParticipantState
+        // Les participants sont déjà normalisés dans le map, donc les types sont corrects
+        const stateA = getParticipantState(a as ParticipantState);
+        const stateB = getParticipantState(b as ParticipantState);
+        if (stateA.status === 'active' && stateB.status !== 'active') return -1;
+        if (stateA.status !== 'active' && stateB.status === 'active') return 1;
+        // Sinon, garder l'ordre initial
+        return 0;
+      });
+  }, [participants, conversation.id]);
 
   // Fonction pour promouvoir un participant en admin
   const handlePromoteAdmin = useCallback(async (participantUserId: number) => {
@@ -225,6 +281,11 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
     try {
       const currentUserId = getCurrentUserId();
+      if (!currentUserId) {
+        setAdminError('❌ Erreur : Utilisateur non connecté.');
+        setTimeout(() => setAdminError(''), 5000);
+        return;
+      }
       const response = await promoteAdmin(conversation.id, participantUserId, true, currentUserId);
       
       if (response.hasError) {
@@ -275,6 +336,11 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
     try {
       const currentUserId = getCurrentUserId();
+      if (!currentUserId) {
+        setAdminError('❌ Erreur : Utilisateur non connecté.');
+        setTimeout(() => setAdminError(''), 5000);
+        return;
+      }
       const response = await promoteAdmin(conversation.id, participantUserId, false, currentUserId);
       
       if (response.hasError) {
@@ -320,20 +386,64 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
 
   // Fonction pour quitter le groupe
   const handleLeaveGroup = useCallback(async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir quitter ce groupe ?')) {
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      setLeaveGroupError('❌ Erreur : Utilisateur non connecté.');
+      setTimeout(() => setLeaveGroupError(''), 5000);
       return;
+    }
+
+    // Trouver le participant actuel
+    const currentUserParticipant = participants.find(p => p.userId === currentUserId);
+    
+    // Vérifier si le participant peut quitter
+    if (currentUserParticipant) {
+      const normalized = normalizeParticipant(currentUserParticipant);
+      const canLeave = canLeaveGroup(normalized);
+      const state = getParticipantState(normalized);
+      
+      if (!canLeave) {
+        setLeaveGroupError('⚠️ Vous avez déjà quitté définitivement ce groupe.');
+        setTimeout(() => setLeaveGroupError(''), 5000);
+        return;
+      }
+      
+      // Message de confirmation selon l'état
+      const confirmMessage = state.status === 'rejoined'
+        ? '⚠️ Attention : Ce sera votre 2ème départ. Vous ne pourrez plus revenir dans ce groupe. Êtes-vous sûr de vouloir quitter définitivement ?'
+        : 'Êtes-vous sûr de vouloir quitter ce groupe ?';
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    } else {
+      // Fallback si participant non trouvé
+      if (!window.confirm('Êtes-vous sûr de vouloir quitter ce groupe ?')) {
+        return;
+      }
     }
 
     setLeaveGroupError('');
 
     try {
       const currentUserId = getCurrentUserId();
-      const response = await leaveGroup(
-        conversation.id,
-        currentUserId,
+      if (!currentUserId) {
+        setLeaveGroupError('❌ Erreur : Utilisateur non connecté.');
+        setTimeout(() => setLeaveGroupError(''), 5000);
+        return;
+      }
+      const response = await deleteParticipant(
+        {
+          conversationId: conversation.id,
+          userId: currentUserId
+        },
         currentUserId
       );
 
+      console.log('Réponse complète après avoir quitté le groupe:', response);
+      console.log('Structure complète de la réponse:', JSON.stringify(response, null, 2));
+
+      // ✅ Vérifier d'abord les erreurs
       if (response.hasError) {
         const apiMessage = response.status?.message || '';
         let errorMessage = '';
@@ -360,10 +470,64 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
         setTimeout(() => {
           setLeaveGroupError('');
         }, 5000);
-      } else {
-        // Sortie réussie - recharger la page
-        window.location.reload();
+        return;
       }
+      
+      // ✅ Vérifier que items existe et contient au moins un élément
+      if (response.items && response.items.length > 0) {
+        const updatedParticipant = response.items[0];
+        
+        // Diagnostic : vérifier si le backend retourne les champs mis à jour
+        if (typeof window !== 'undefined') {
+          logDiagnostic(updatedParticipant, 'delete', 'Après avoir quitté le groupe');
+          
+          // Validation : vérifier que la logique métier est respectée
+          if (currentUserParticipant) {
+            const validation = validateDeleteResponse(
+              normalizeParticipant(currentUserParticipant),
+              updatedParticipant,
+              currentUserId
+            );
+            logValidation(validation, 'Quitter le groupe');
+            
+            if (!validation.isValid) {
+              console.error('🚨 PROBLÈME BACKEND: La logique métier n\'est pas respectée lors de la sortie du groupe');
+              const state = getParticipantState(normalizeParticipant(currentUserParticipant));
+              if (state.status === 'active') {
+                console.error('1er départ attendu: hasLeft=true, leftAt et leftBy remplis');
+              } else if (state.status === 'rejoined') {
+                console.error('2ème départ (définitif) attendu: hasDefinitivelyLeft=true, definitivelyLeftAt et definitivelyLeftBy remplis');
+              }
+            }
+          }
+        }
+        
+        console.log('Vous avez quitté le groupe. Participant mis à jour:', updatedParticipant);
+        
+        // Logger les états du participant après avoir quitté le groupe
+        console.log('Nouveaux états après avoir quitté le groupe:', {
+          id: updatedParticipant.id,
+          conversationId: updatedParticipant.conversationId,
+          userId: updatedParticipant.userId,
+          hasLeft: updatedParticipant.hasLeft,
+          hasDefinitivelyLeft: updatedParticipant.hasDefinitivelyLeft,
+          hasCleaned: updatedParticipant.hasCleaned,
+          leftAt: updatedParticipant.leftAt,
+          leftBy: updatedParticipant.leftBy,
+          definitivelyLeftAt: updatedParticipant.definitivelyLeftAt,
+          definitivelyLeftBy: updatedParticipant.definitivelyLeftBy,
+          fullData: updatedParticipant
+        });
+      } else {
+        console.warn('Aucun participant retourné dans la réponse après avoir quitté le groupe', {
+          hasItems: !!response.items,
+          itemsLength: response.items?.length,
+          fullResponse: response
+        });
+      }
+      
+      // Sortie réussie - recharger la page
+      window.location.reload();
     } catch (err: any) {
       console.error('Erreur lors de la sortie du groupe:', err);
       let errorMessage = '';
@@ -395,9 +559,19 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
   // Fonction pour rendre un participant
   const renderParticipant = (participant: ParticipantUser) => {
     const currentUserId = getCurrentUserId();
-    const isOwnParticipant = participant.userId === currentUserId;
+    const isOwnParticipant = currentUserId !== null && participant.userId === currentUserId;
     const isMenuOpen = openAdminMenuId === participant.id;
     const showAdminButton = currentUserIsAdmin && !isOwnParticipant;
+    
+    // Normaliser et obtenir l'état du participant
+    const normalizedParticipant = normalizeParticipant(participant);
+    const participantState = getParticipantState(normalizedParticipant);
+    const statusMessage = getParticipantStatusMessage(normalizedParticipant);
+    
+    // Ne pas afficher les participants définitivement partis
+    if (participantState.status === 'definitively_left') {
+      return null;
+    }
 
     return (
       <div 
@@ -431,10 +605,10 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     : `Participant #${participant.userId || participant.id}`
                 )}
               </p>
-              {/* Badge de statut stylisé */}
-              {participant.isAdmin !== undefined && (
+              {/* Badge Admin/Membre */}
+              {normalizedParticipant.isAdmin !== undefined && (
                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm ${
-                  participant.isAdmin
+                  normalizedParticipant.isAdmin
                     ? theme === 'dark'
                       ? 'bg-gradient-to-r from-orange-500/30 to-orange-600/30 text-orange-300 border border-orange-400/40 shadow-orange-500/20'
                       : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 border border-orange-300 shadow-orange-200/50'
@@ -442,7 +616,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     ? 'bg-gradient-to-r from-gray-600/40 to-gray-700/40 text-gray-300 border border-gray-500/40 shadow-gray-600/20'
                     : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300 shadow-gray-200/50'
                 }`}>
-                  {participant.isAdmin ? (
+                  {normalizedParticipant.isAdmin ? (
                     <span className="flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -459,9 +633,38 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                   )}
                 </span>
               )}
+              
+              {/* Badge d'état du participant (quitté, réintégré, etc.) */}
+              {participantState.status !== 'active' && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  participantState.status === 'left_once'
+                    ? theme === 'dark'
+                      ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-500/40'
+                      : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                    : participantState.status === 'rejoined'
+                    ? theme === 'dark'
+                      ? 'bg-green-900/30 text-green-300 border border-green-500/40'
+                      : 'bg-green-100 text-green-700 border border-green-300'
+                    : ''
+                }`}>
+                  {participantState.status === 'left_once' && '🟡 A quitté'}
+                  {participantState.status === 'rejoined' && '🟢 Réintégré'}
+                </span>
+              )}
             </div>
             {participant.email && (
               <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
+            )}
+            {/* Afficher le message d'état si le participant n'est pas actif */}
+            {participantState.status !== 'active' && (
+              <p className={`text-xs ${textSecondary} mt-0.5 italic`}>
+                {statusMessage}
+                {normalizedParticipant.recreatedAt && normalizedParticipant.recreatedBy && (
+                  <span className="ml-1">
+                    (par utilisateur #{normalizedParticipant.recreatedBy})
+                  </span>
+                )}
+              </p>
             )}
           </div>
         </div>
@@ -695,7 +898,14 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   ) : sortedParticipants.length > 0 ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {sortedParticipants.map(renderParticipant)}
+                      {sortedParticipants
+                        .filter(p => {
+                          // Filtrer les participants définitivement partis
+                          const normalized = normalizeParticipant(p);
+                          const state = getParticipantState(normalized);
+                          return state.status !== 'definitively_left';
+                        })
+                        .map(renderParticipant)}
                     </div>
                   ) : (
                     <div className="text-center py-4">
@@ -827,33 +1037,81 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                 </div>
 
                 {/* Modals pour les actions */}
-                {showAddModal && (
-                  <AddParticipantsModal
-                    conversationId={conversation.id}
-                    conversationTitle={titre}
-                    currentUserId={getCurrentUserId()}
-                    onClose={() => setShowAddModal(false)}
-                    onSuccess={() => {
-                      loadParticipants(conversation.id);
-                      setShowAddModal(false);
-                    }}
-                    theme={theme}
-                  />
-                )}
+                {showAddModal && (() => {
+                  const currentUserId = getCurrentUserId();
+                  if (!currentUserId) return null;
+                  return (
+                    <AddParticipantsModal
+                      conversationId={conversation.id}
+                      conversationTitle={titre}
+                      currentUserId={currentUserId}
+                      onClose={() => setShowAddModal(false)}
+                      onSuccess={(participants) => {
+                        if (participants && participants.length > 0) {
+                          console.log('Participants ajoutés reçus dans InfoGroupe:', participants);
+                          participants.forEach((p, index) => {
+                            console.log(`État du participant ${index + 1} après ajout:`, {
+                              userId: p.userId,
+                              hasLeft: p.hasLeft,
+                              hasDefinitivelyLeft: p.hasDefinitivelyLeft,
+                              hasCleaned: p.hasCleaned,
+                              recreatedAt: p.recreatedAt,
+                              recreatedBy: p.recreatedBy,
+                              leftAt: p.leftAt,
+                              leftBy: p.leftBy,
+                              definitivelyLeftAt: p.definitivelyLeftAt,
+                              definitivelyLeftBy: p.definitivelyLeftBy,
+                            });
+                            
+                            // Vérification spécifique pour recreatedBy
+                            console.log(`⚠️ Vérification recreatedBy pour participant ${index + 1}:`, {
+                              'recreatedBy reçu': p.recreatedBy,
+                              'Type': typeof p.recreatedBy,
+                              'Est défini': p.recreatedBy !== undefined,
+                              'Est null': p.recreatedBy === null,
+                              'recreatedAt présent': !!p.recreatedAt,
+                              'Contexte': p.recreatedAt ? 'Réintégration détectée (recreatedAt présent)' : 'Nouveau participant'
+                            });
+                          });
+                        }
+                        loadParticipants(conversation.id);
+                        setShowAddModal(false);
+                      }}
+                      theme={theme}
+                    />
+                  );
+                })()}
 
-                {showRemoveModal && (
-                  <RemoveParticipantModal
-                    conversationId={conversation.id}
-                    conversationTitle={titre}
-                    currentUserId={getCurrentUserId()}
-                    theme={theme}
-                    onClose={() => setShowRemoveModal(false)}
-                    onSuccess={() => {
-                      loadParticipants(conversation.id);
-                      setShowRemoveModal(false);
-                    }}
-                  />
-                )}
+                {showRemoveModal && (() => {
+                  const currentUserId = getCurrentUserId();
+                  if (!currentUserId) return null;
+                  return (
+                    <RemoveParticipantModal
+                      conversationId={conversation.id}
+                      conversationTitle={titre}
+                      currentUserId={currentUserId}
+                      theme={theme}
+                      onClose={() => setShowRemoveModal(false)}
+                      onSuccess={(participant) => {
+                        if (participant) {
+                          console.log('Participant retiré reçu dans InfoGroupe:', participant);
+                          console.log('État du participant après retrait:', {
+                            userId: participant.userId,
+                            hasLeft: participant.hasLeft,
+                            hasDefinitivelyLeft: participant.hasDefinitivelyLeft,
+                            hasCleaned: participant.hasCleaned,
+                            leftAt: participant.leftAt,
+                            leftBy: participant.leftBy,
+                            definitivelyLeftAt: participant.definitivelyLeftAt,
+                            definitivelyLeftBy: participant.definitivelyLeftBy,
+                          });
+                        }
+                        loadParticipants(conversation.id);
+                        setShowRemoveModal(false);
+                      }}
+                    />
+                  );
+                })()}
 
               </div>
             </div>
