@@ -3,6 +3,7 @@ import type { Message } from '../../Api/Message.api';
 import MessageActions from '../../Pages/MessageActions';
 import { deleteMessage } from '../../Api/deleteMessage.api';
 import { getCurrentUserId } from '../../utils/user.utils';
+import { FiX } from 'react-icons/fi';
 
 type MessageItemProps = {
   message: Message;
@@ -22,6 +23,7 @@ export const MessageItem = ({
   onMessageDeleted,
 }: MessageItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   // Règle UI demandée:
   // - message REÇU (createdBy !== currentUserId) → affiché à GAUCHE
   // - message ENVOYÉ (createdBy === currentUserId) → affiché à DROITE
@@ -164,13 +166,44 @@ export const MessageItem = ({
   };
 
   return (
-    <div
-      className={`flex w-full ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-1 group`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-      }}
-    >
+    <>
+      {/* Modal pour afficher l'image en grand */}
+      {showImageModal && messageHasImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={() => setShowImageModal(false)}
+            className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                : 'bg-white hover:bg-gray-100 text-gray-900'
+            }`}
+            aria-label="Fermer"
+          >
+            <FiX className="w-6 h-6" />
+          </button>
+          <div
+            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={(message.messageImgUrl ?? '') as string}
+              alt="Image en grand"
+              className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`flex w-full ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-1 group`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+        }}
+      >
       <div className={`flex flex-col max-w-[75%] ${isOwnMessage ? 'items-end' : 'items-start'} relative`}>
         {/* Nom de l'expéditeur (uniquement pour les conversations de groupe et uniquement pour les autres utilisateurs) */}
         {isGroupConversation && !isOwnMessage && message.senderName && participantColor && (
@@ -230,6 +263,7 @@ export const MessageItem = ({
                 src={(message.messageImgUrl ?? '') as string}
                 alt="Message"
                 loading="lazy"
+                onClick={() => setShowImageModal(true)}
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   console.error('Erreur de chargement de l\'image:', {
@@ -328,6 +362,7 @@ export const MessageItem = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -4,6 +4,7 @@ import { getUsers, type User } from '../Api/User.api';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { createParticipant } from '../Api/createParticipantConversation.api';
 import { FiLoader, FiX } from 'react-icons/fi';
+import { useToast } from '../components/Toast';
 import {
   normalizeParticipant,
   getParticipantState,
@@ -18,6 +19,8 @@ type AddParticipantsModalProps = {
   currentUserId: number;
   onClose: () => void;
   onSuccess?: (participants?: any[]) => void;
+  onError?: (message: string) => void;
+  onWarning?: (message: string) => void;
   theme?: 'light' | 'dark';
 };
 
@@ -27,10 +30,13 @@ const AddParticipantsModal = ({
   currentUserId,
   onClose, 
   onSuccess,
+  onWarning,
+  onError,
   theme: themeProp 
 }: AddParticipantsModalProps) => {
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
+  const { error: showErrorToast, warning: showWarningToast } = useToast();
   const [contacts, setContacts] = useState<User[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -113,11 +119,21 @@ const AddParticipantsModal = ({
       // Filtrer pour exclure :
       // - L'utilisateur connecté
       // - Les utilisateurs supprimés
-      // - Les participants qui ne peuvent pas être ajoutés (actifs, réintégrés, définitivement partis)
+      // - Les participants actifs (status === 'active')
       const filteredContacts = usersList.filter(
-        user => !user.isDeleted && 
-                user.id !== currentUserId && 
-                !cannotBeAddedIds.includes(user.id || 0)
+        user => {
+          if (user.isDeleted || user.id === currentUserId) {
+            return false;
+          }
+          
+          // Exclure les participants actifs
+          const existingParticipant = existingParticipants.find(p => p.userId === user.id);
+          if (existingParticipant && existingParticipant.state.status === 'active') {
+            return false;
+          }
+          
+          return true;
+        }
       );
       
       setContacts(filteredContacts);
@@ -147,17 +163,85 @@ const AddParticipantsModal = ({
     }
 
     // Vérification supplémentaire : s'assurer qu'on n'essaie pas d'ajouter quelqu'un qui ne peut pas l'être
-    const invalidContacts = selectedContacts.filter(userId => {
-      const participant = existingParticipants.find(p => p.userId === userId);
-      if (!participant) return false; // Nouveau participant, OK
-      
-      const status = participant.state.status;
-      // Ne peut pas ajouter si : actif, réintégré, ou définitivement parti
-      return status === 'active' || status === 'rejoined' || status === 'definitively_left';
-    });
+    // Générer des messages d'erreur personnalisés pour chaque utilisateur invalide
+    const invalidContacts = selectedContacts
+      .map(userId => {
+        const participant = existingParticipants.find(p => p.userId === userId);
+        if (!participant) return null; // Nouveau participant, OK
+        
+        const status = participant.state.status;
+        if (status === 'active' || status === 'rejoined' || status === 'definitively_left') {
+          const contact = contacts.find(c => c.id === userId);
+          const contactName = contact 
+            ? (contact.prenoms && contact.nom 
+                ? `${contact.prenoms} ${contact.nom}` 
+                : contact.email || 'Cet utilisateur')
+            : 'Cet utilisateur';
+          
+          let errorMessage = '';
+          if (status === 'active') {
+            errorMessage = `❌ ${contactName} est déjà membre actif du groupe`;
+          } else if (status === 'rejoined') {
+            errorMessage = `❌ ${contactName} a déjà été réintégré dans le groupe et ne peut pas être réintégré à nouveau`;
+          } else if (status === 'definitively_left') {
+            errorMessage = `❌ ${contactName} a quitté définitivement le groupe et ne peut plus être ajouté`;
+          }
+          
+          return { userId, errorMessage, status };
+        }
+        return null;
+      })
+      .filter(item => item !== null);
     
     if (invalidContacts.length > 0) {
-      setError('⚠️ Certains participants sélectionnés ne peuvent pas être ajoutés (déjà actifs, réintégrés, ou définitivement partis). Veuillez rafraîchir la liste.');
+      // Afficher un message d'erreur personnalisé comme pour la création de conversation avec soi-même
+      let errorMessage = '';
+      
+      if (invalidContacts.length === 1) {
+        // Un seul utilisateur invalide - message personnalisé
+        const invalidContact = invalidContacts[0];
+        const contact = contacts.find(c => c.id === invalidContact.userId);
+        const contactName = contact 
+          ? (contact.prenoms && contact.nom 
+              ? `${contact.prenoms} ${contact.nom}` 
+              : contact.email || 'Cet utilisateur')
+          : 'Cet utilisateur';
+        
+        if (invalidContact.status === 'rejoined') {
+          errorMessage = `Impossible d'ajouter ${contactName}. Cet utilisateur a déjà été réintégré dans le groupe et ne peut pas être ajouté à nouveau.`;
+        } else if (invalidContact.status === 'definitively_left') {
+          errorMessage = `Impossible d'ajouter ${contactName}. Cet utilisateur a quitté définitivement le groupe et ne peut plus être ajouté.`;
+        } else {
+          errorMessage = `Impossible d'ajouter ${contactName}. Vous ne pouvez plus intégrer cet utilisateur dans le groupe.`;
+        }
+      } else {
+        // Plusieurs utilisateurs invalides - message regroupé
+        const contactNames = invalidContacts.map(invalid => {
+          const contact = contacts.find(c => c.id === invalid.userId);
+          return contact 
+            ? (contact.prenoms && contact.nom 
+                ? `${contact.prenoms} ${contact.nom}` 
+                : contact.email || 'Cet utilisateur')
+            : 'Cet utilisateur';
+        }).join(', ');
+        
+        errorMessage = `Impossible d'ajouter ${invalidContacts.length} utilisateur(s). Les utilisateurs suivants ne peuvent pas être ajoutés : ${contactNames}. Ces utilisateurs ont déjà été réintégrés ou ont quitté définitivement le groupe.`;
+      }
+      
+      // Afficher le message d'erreur dans le modal (pas d'alert natif)
+      // Utiliser onWarning si disponible, sinon afficher dans le modal via setError
+      if (onWarning) {
+        onWarning(errorMessage);
+      } else if (onError) {
+        onError(errorMessage);
+      } else if (showWarningToast) {
+        showWarningToast(errorMessage);
+      } else if (showErrorToast) {
+        showErrorToast(errorMessage);
+      }
+      
+      // Toujours définir l'erreur dans le state pour l'afficher dans le modal
+      setError(errorMessage);
       return;
     }
 
@@ -380,11 +464,6 @@ const AddParticipantsModal = ({
                       : contact.prenoms || contact.nom || contact.email || 'Contact';
                     const initials = (contact.prenoms?.charAt(0) || '') + (contact.nom?.charAt(0) || '');
                     
-                    // Vérifier si ce contact était un participant qui a quitté (pour afficher un indicateur)
-                    const previousParticipant = existingParticipants.find(
-                      p => p.userId === contact.id && (p.state.status === 'left_once' || p.state.status === 'rejoined')
-                    );
-
                     return (
                       <label
                         key={contact.id}
@@ -411,21 +490,8 @@ const AddParticipantsModal = ({
                           {initials || fullName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className={`font-medium ${textPrimary} truncate`}>{fullName}</p>
-                            {previousParticipant && (
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                previousParticipant.state.status === 'left_once'
-                                  ? theme === 'dark'
-                                    ? 'bg-yellow-900/30 text-yellow-300'
-                                    : 'bg-yellow-100 text-yellow-700'
-                                  : theme === 'dark'
-                                  ? 'bg-green-900/30 text-green-300'
-                                  : 'bg-green-100 text-green-700'
-                              }`}>
-                                {previousParticipant.state.status === 'left_once' ? '🟡 A quitté' : '🟢 Réintégration'}
-                              </span>
-                            )}
                           </div>
                           {contact.email && (
                             <p className={`text-xs ${textSecondary} truncate`}>{contact.email}</p>

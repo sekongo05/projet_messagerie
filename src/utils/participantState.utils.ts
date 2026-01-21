@@ -45,19 +45,27 @@ export function normalizeBoolean(value: any): boolean {
  * Normalise un participant avec toutes ses valeurs booléennes
  */
 export function normalizeParticipant(participant: any): ParticipantState {
+  // Gérer les variantes de noms (camelCase vs snake_case)
+  const recreatedAt = participant.recreatedAt ?? participant.recreated_at ?? null;
+  const recreatedBy = participant.recreatedBy ?? participant.recreated_by ?? null;
+  const leftAt = participant.leftAt ?? participant.left_at ?? null;
+  const leftBy = participant.leftBy ?? participant.left_by ?? null;
+  const definitivelyLeftAt = participant.definitivelyLeftAt ?? participant.definitively_left_at ?? null;
+  const definitivelyLeftBy = participant.definitivelyLeftBy ?? participant.definitively_left_by ?? null;
+  
   return {
     ...participant,
-    hasLeft: normalizeBoolean(participant.hasLeft),
-    hasDefinitivelyLeft: normalizeBoolean(participant.hasDefinitivelyLeft),
-    hasCleaned: normalizeBoolean(participant.hasCleaned),
-    isAdmin: normalizeBoolean(participant.isAdmin),
-    isDeleted: normalizeBoolean(participant.isDeleted),
-    recreatedAt: participant.recreatedAt || null,
-    recreatedBy: participant.recreatedBy || null,
-    leftAt: participant.leftAt || null,
-    leftBy: participant.leftBy || null,
-    definitivelyLeftAt: participant.definitivelyLeftAt || null,
-    definitivelyLeftBy: participant.definitivelyLeftBy || null,
+    hasLeft: normalizeBoolean(participant.hasLeft ?? participant.has_left),
+    hasDefinitivelyLeft: normalizeBoolean(participant.hasDefinitivelyLeft ?? participant.has_definitively_left),
+    hasCleaned: normalizeBoolean(participant.hasCleaned ?? participant.has_cleaned),
+    isAdmin: normalizeBoolean(participant.isAdmin ?? participant.is_admin),
+    isDeleted: normalizeBoolean(participant.isDeleted ?? participant.is_deleted),
+    recreatedAt: recreatedAt || null,
+    recreatedBy: recreatedBy || null,
+    leftAt: leftAt || null,
+    leftBy: leftBy || null,
+    definitivelyLeftAt: definitivelyLeftAt || null,
+    definitivelyLeftBy: definitivelyLeftBy || null,
   };
 }
 
@@ -82,7 +90,13 @@ export function getParticipantState(participant: ParticipantState): ParticipantS
   if (normalized.hasLeft && !normalized.hasDefinitivelyLeft) {
     // Vérifier s'il a été réintégré
     // IMPORTANT: Lors de la réintégration, hasLeft reste à true, mais recreatedAt est rempli
-    if (normalized.recreatedAt) {
+    // Vérifier si recreatedAt existe et n'est pas vide/null/undefined
+    const hasRecreatedAt = normalized.recreatedAt && 
+                           normalized.recreatedAt !== null && 
+                           normalized.recreatedAt !== undefined &&
+                           normalized.recreatedAt !== '';
+    
+    if (hasRecreatedAt) {
       // Participant réintégré: hasLeft = true, recreatedAt != null, isDeleted = false
       return {
         status: 'rejoined',

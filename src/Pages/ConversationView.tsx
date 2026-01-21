@@ -105,6 +105,8 @@ const ConversationView = ({
             <InfoGroupe 
               conversation={conversation}
               theme={theme}
+              onWarning={onWarning}
+              onError={onError}
             />
           )}
           <button

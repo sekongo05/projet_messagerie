@@ -23,6 +23,8 @@ import { getCurrentUserId as getCurrentUserIdFromUtils } from '../utils/user.uti
 type InfoGroupeProps = {
   conversation: Conversation;
   theme?: 'light' | 'dark';
+  onWarning?: (message: string) => void;
+  onError?: (message: string) => void;
 };
 
 type ParticipantUser = {
@@ -46,7 +48,7 @@ type ParticipantUser = {
   [key: string]: any;
 };
 
-const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
+const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: InfoGroupeProps) => {
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
   const [isOpen, setIsOpen] = useState(false);
@@ -159,10 +161,21 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
         const normalizedParticipant = normalizeParticipant(participant);
         
         console.log('Participant normalisé:', normalizedParticipant);
+        console.log('🔍 Vérification recreatedAt pour le participant:', {
+          userId: participant.userId,
+          hasLeft: normalizedParticipant.hasLeft,
+          hasDefinitivelyLeft: normalizedParticipant.hasDefinitivelyLeft,
+          recreatedAt: normalizedParticipant.recreatedAt,
+          recreatedBy: normalizedParticipant.recreatedBy,
+          isDeleted: normalizedParticipant.isDeleted,
+        });
         
         // Obtenir l'état du participant
         const participantState = getParticipantState(normalizedParticipant);
         console.log('État du participant déterminé:', participantState);
+        if (participantState.status === 'rejoined') {
+          console.log('✅ Statut "réintégré" détecté pour le participant userId:', participant.userId);
+        }
         
         return {
           ...normalizedParticipant,
@@ -273,6 +286,36 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
         return 0;
       });
   }, [participants, conversation.id]);
+
+  // Calculer le nombre de participants actifs (sans les définitivement partis et les left_once)
+  const activeParticipantsCount = useMemo(() => {
+    return sortedParticipants.filter(p => {
+      const normalized = normalizeParticipant(p);
+      const state = getParticipantState(normalized);
+      // Exclure définitivement partis et left_once (anciens membres)
+      return state.status !== 'definitively_left' && state.status !== 'left_once';
+    }).length;
+  }, [sortedParticipants]);
+
+  // Filtrer les participants actifs pour l'affichage (sans les anciens membres)
+  const activeParticipants = useMemo(() => {
+    return sortedParticipants.filter(p => {
+      const normalized = normalizeParticipant(p);
+      const state = getParticipantState(normalized);
+      // Exclure définitivement partis et left_once (anciens membres)
+      return state.status !== 'definitively_left' && state.status !== 'left_once';
+    });
+  }, [sortedParticipants]);
+
+  // Filtrer les anciens membres (définitivement partis et left_once)
+  const formerMembers = useMemo(() => {
+    return sortedParticipants.filter(p => {
+      const normalized = normalizeParticipant(p);
+      const state = getParticipantState(normalized);
+      // Inclure seulement définitivement partis et left_once
+      return state.status === 'definitively_left' || state.status === 'left_once';
+    });
+  }, [sortedParticipants]);
 
   // Fonction pour promouvoir un participant en admin
   const handlePromoteAdmin = useCallback(async (participantUserId: number) => {
@@ -556,7 +599,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
     }
   }, [conversation.id, getCurrentUserId]);
 
-  // Fonction pour rendre un participant
+  // Fonction pour rendre un participant actif
   const renderParticipant = (participant: ParticipantUser) => {
     const currentUserId = getCurrentUserId();
     const isOwnParticipant = currentUserId !== null && participant.userId === currentUserId;
@@ -567,11 +610,6 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
     const normalizedParticipant = normalizeParticipant(participant);
     const participantState = getParticipantState(normalizedParticipant);
     const statusMessage = getParticipantStatusMessage(normalizedParticipant);
-    
-    // Ne pas afficher les participants définitivement partis
-    if (participantState.status === 'definitively_left') {
-      return null;
-    }
 
     return (
       <div 
@@ -887,7 +925,7 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className={`text-xs font-semibold uppercase tracking-wide ${textSecondary} mb-2`}>
-                        Participants ({loadingParticipants ? '...' : sortedParticipants.length})
+                        Participants ({loadingParticipants ? '...' : activeParticipantsCount})
                       </h3>
                     </div>
                   </div>
@@ -896,16 +934,9 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     <div className="text-center py-4">
                       <p className={textSecondary}>Chargement des participants...</p>
                     </div>
-                  ) : sortedParticipants.length > 0 ? (
+                  ) : activeParticipants.length > 0 ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {sortedParticipants
-                        .filter(p => {
-                          // Filtrer les participants définitivement partis
-                          const normalized = normalizeParticipant(p);
-                          const state = getParticipantState(normalized);
-                          return state.status !== 'definitively_left';
-                        })
-                        .map(renderParticipant)}
+                      {activeParticipants.map(renderParticipant)}
                     </div>
                   ) : (
                     <div className="text-center py-4">
@@ -913,6 +944,70 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                     </div>
                   )}
                 </div>
+
+                {/* Anciens membres - Carte avec liste */}
+                {!loadingParticipants && formerMembers.length > 0 && (
+                  <div className={`${cardBg} rounded-xl p-4 border ${borderColor} transition-all hover:shadow-md mt-4`}>
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`p-2 rounded-lg ${iconBg} shrink-0 opacity-60`}>
+                        <FiUsers className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-xs font-semibold uppercase tracking-wide ${textSecondary} mb-2 opacity-60`}>
+                          Anciens membres ({formerMembers.length})
+                        </h3>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {formerMembers.map((participant) => {
+                        const normalizedParticipant = normalizeParticipant(participant);
+                        const participantState = getParticipantState(normalizedParticipant);
+                        const fullName = participant.prenoms && participant.nom
+                          ? `${participant.prenoms} ${participant.nom}`
+                          : participant.prenoms || participant.nom || participant.email || 'Ancien membre';
+                        const initials = (participant.prenoms?.charAt(0) || '') + (participant.nom?.charAt(0) || '');
+                        
+                        return (
+                          <div 
+                            key={participant.id} 
+                            className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-700/30' : 'bg-gray-100'} border ${borderColor} opacity-70`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-gray-400 shrink-0 opacity-70`}>
+                                {initials || fullName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`${textSecondary} font-medium text-sm opacity-80`}>
+                                  {fullName}
+                                </p>
+                                {participant.email && (
+                                  <p className={`text-xs ${textSecondary} opacity-60 mt-0.5`}>{participant.email}</p>
+                                )}
+                                {participantState.status === 'left_once' && (
+                                  <p className={`text-xs ${textSecondary} opacity-60 mt-1 italic`}>
+                                    A quitté le groupe
+                                    {normalizedParticipant.leftAt && (
+                                      <span className="ml-1">le {normalizedParticipant.leftAt}</span>
+                                    )}
+                                  </p>
+                                )}
+                                {participantState.status === 'definitively_left' && (
+                                  <p className={`text-xs ${textSecondary} opacity-60 mt-1 italic`}>
+                                    A quitté définitivement
+                                    {normalizedParticipant.definitivelyLeftAt && (
+                                      <span className="ml-1">le {normalizedParticipant.definitivelyLeftAt}</span>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Message d'erreur pour quitter le groupe */}
                 {leaveGroupError && (
@@ -1046,6 +1141,8 @@ const InfoGroupe = ({ conversation, theme: themeProp }: InfoGroupeProps) => {
                       conversationTitle={titre}
                       currentUserId={currentUserId}
                       onClose={() => setShowAddModal(false)}
+                      onWarning={onWarning}
+                      onError={onError}
                       onSuccess={(participants) => {
                         if (participants && participants.length > 0) {
                           console.log('Participants ajoutés reçus dans InfoGroupe:', participants);
