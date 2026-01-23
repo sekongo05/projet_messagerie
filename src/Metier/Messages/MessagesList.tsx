@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { MessageItem } from './MessageItems';
-import type { Message } from '../../Api/Message.api';
+import type { MessageOrSystemEvent } from '../../Hooks/useMessagesWithLeaveEvents';
+import { isSystemLeaveEvent } from '../../utils/systemLeaveEvent.utils';
 
 type MessagesListProps = {
-  messages: Message[];
+  messages: MessageOrSystemEvent[];
   currentUserId: number;
   conversationId: number | null;
   theme?: 'light' | 'dark';
@@ -37,11 +38,11 @@ export const MessagesList = ({
 }: MessagesListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Trier les messages du plus ancien au plus récent (pour affichage WhatsApp)
-  const sortedMessages = [...messages].sort((a, b) => {
+  // Trier messages + événements "X a quitté" du plus ancien au plus récent (affichage WhatsApp)
+  const sortedItems = [...messages].sort((a, b) => {
     const dateA = new Date(a.createdAt).getTime();
     const dateB = new Date(b.createdAt).getTime();
-    return dateA - dateB; // Du plus ancien au plus récent
+    return dateA - dateB;
   });
 
   // Scroll automatique vers le bas quand de nouveaux messages arrivent
@@ -49,7 +50,7 @@ export const MessagesList = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  if (sortedMessages.length === 0) {
+  if (sortedItems.length === 0) {
     return (
       <div className={`flex-1 flex items-center justify-center p-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
         <p>Aucun message. Commencez la conversation !</p>
@@ -61,16 +62,17 @@ export const MessagesList = ({
     <div 
       className={`flex-1 overflow-y-auto px-4 pt-3 pb-6 ${theme === 'dark' ? 'bg-black' : 'bg-gray-100'}`}
     >
-      {/* Contenu des messages */}
+      {/* Contenu des messages + événements "X a quitté le groupe" */}
       <div className="relative min-h-full flex flex-col justify-end gap-2">
-        {sortedMessages.map((message, idx) => {
-          const prev = sortedMessages[idx - 1];
+        {sortedItems.map((item, idx) => {
+          const prev = sortedItems[idx - 1];
           const showDaySeparator =
             idx === 0 ||
-            (prev?.createdAt && message.createdAt && formatDayLabel(prev.createdAt) !== formatDayLabel(message.createdAt));
+            (prev?.createdAt && item.createdAt && formatDayLabel(prev.createdAt) !== formatDayLabel(item.createdAt));
+          const key = isSystemLeaveEvent(item) ? item.id : `msg-${item.id}`;
 
           return (
-            <div key={message.id} className="flex flex-col gap-2">
+            <div key={key} className="flex flex-col gap-2">
               {showDaySeparator && (
                 <div className="flex justify-center">
                   <span
@@ -80,18 +82,32 @@ export const MessagesList = ({
                         : 'bg-white/80 text-gray-600 border border-gray-200'
                     }`}
                   >
-                    {formatDayLabel(message.createdAt)}
+                    {formatDayLabel(item.createdAt)}
                   </span>
                 </div>
               )}
-              <MessageItem 
-                message={message} 
-                currentUserId={currentUserId}
-                conversationId={conversationId}
-                theme={theme} 
-                isGroupConversation={isGroupConversation}
-                onMessageDeleted={onMessageDeleted}
-              />
+              {isSystemLeaveEvent(item) ? (
+                <div className="flex justify-center">
+                  <span
+                    className={`px-3 py-1.5 rounded-lg text-xs max-w-[85%] text-center ${
+                      theme === 'dark'
+                        ? 'bg-gray-800/60 text-gray-400 border border-gray-700/50'
+                        : 'bg-gray-200/80 text-gray-600 border border-gray-300/60'
+                    }`}
+                  >
+                    {item.content}
+                  </span>
+                </div>
+              ) : (
+                <MessageItem
+                  message={item}
+                  currentUserId={currentUserId}
+                  conversationId={conversationId}
+                  theme={theme}
+                  isGroupConversation={isGroupConversation}
+                  onMessageDeleted={onMessageDeleted}
+                />
+              )}
             </div>
           );
         })}

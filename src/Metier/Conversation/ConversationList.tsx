@@ -4,6 +4,9 @@ import type { Conversation } from '../../Api/Conversation.api';
 import { exportConversations } from '../../Api/exportConversation.api';
 import { useDeleteConversation } from '../../Pages/DeleteConversationHandler';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { getParticipantsByConversationId } from '../../Api/getParticipantConversation.api';
+import { normalizeParticipant, getParticipantState } from '../../utils/participantState.utils';
+import { getCurrentUserId } from '../../utils/user.utils';
 
 type ConversationListProps = {
   conversations: Conversation[];
@@ -11,6 +14,7 @@ type ConversationListProps = {
   onConversationSelect: (conversationId: number) => void;
   onConversationDeleted?: () => void;
   theme?: 'light' | 'dark';
+  currentUserId?: number;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
   onWarning?: (message: string) => void;
@@ -22,10 +26,12 @@ export const ConversationList = ({
   onConversationSelect,
   onConversationDeleted,
   theme = 'light',
+  currentUserId: currentUserIdProp,
   onError,
   onSuccess,
   onWarning,
 }: ConversationListProps) => {
+  const currentUserId = currentUserIdProp ?? getCurrentUserId() ?? 1;
   // Utiliser le hook personnalisé pour gérer la suppression des conversations
   const { handleDeleteConversation } = useDeleteConversation();
   
@@ -93,30 +99,50 @@ export const ConversationList = ({
     }
   };
 
-  // Fonction pour ouvrir le dialogue de confirmation
-  const handleDeleteClick = (conversationId: number) => {
-    // Vérifier si c'est une conversation de groupe
+  // Fonction pour ouvrir le dialogue de confirmation (async pour les groupes)
+  const handleDeleteClick = async (conversationId: number) => {
     const conversation = conversations.find(c => c.id === conversationId);
     const conv = conversation as any;
     const isGroup = conv?.typeConversationCode === 'GROUP' || conv?.typeConversation === 'GROUP';
-    
-    // Pour les groupes, afficher un message d'avertissement au lieu de demander confirmation
-    if (isGroup) {
-      if (onWarning) {
-        onWarning('Vous devez quitter le groupe avant de le supprimer');
-      } else if (onError) {
-        onError('Vous devez quitter le groupe avant de le supprimer');
-      } else {
-        alert('Vous devez quitter le groupe avant de le supprimer');
-      }
+
+    if (!isGroup) {
+      setConfirmationDialog({ isOpen: true, conversationId });
       return;
     }
-    
-    // Pour les conversations privées, ouvrir le dialogue de confirmation
-    setConfirmationDialog({
-      isOpen: true,
-      conversationId,
-    });
+
+    // Groupe : autoriser la suppression seulement si l'utilisateur a quitté (hasLeft ou hasDefinitivelyLeft)
+    try {
+      const participantsResponse: any = await getParticipantsByConversationId(
+        conversationId,
+        currentUserId,
+        { includeLeft: true }
+      );
+      let participantsList: any[] = [];
+      if (Array.isArray(participantsResponse)) participantsList = participantsResponse;
+      else if (participantsResponse?.items) participantsList = participantsResponse.items;
+      else if (participantsResponse?.data?.items) participantsList = participantsResponse.data.items;
+      else if (participantsResponse?.data && Array.isArray(participantsResponse.data)) participantsList = participantsResponse.data;
+
+      const participant = participantsList.find((p: any) => p.userId === currentUserId);
+      const hasLeft = participant
+        ? (() => {
+            const norm = normalizeParticipant(participant);
+            const state = getParticipantState(norm);
+            return state.status === 'left_once' || state.status === 'definitively_left';
+          })()
+        : false;
+
+      if (hasLeft) {
+        setConfirmationDialog({ isOpen: true, conversationId });
+      } else {
+        if (onWarning) onWarning('Vous devez quitter le groupe avant de le supprimer');
+        else if (onError) onError('Vous devez quitter le groupe avant de le supprimer');
+        else alert('Vous devez quitter le groupe avant de le supprimer');
+      }
+    } catch {
+      if (onError) onError('Impossible de vérifier si vous avez quitté le groupe. Réessayez.');
+      else alert('Impossible de vérifier si vous avez quitté le groupe. Réessayez.');
+    }
   };
 
   // Fonction pour confirmer et exécuter la suppression

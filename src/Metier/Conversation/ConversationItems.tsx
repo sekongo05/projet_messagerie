@@ -56,84 +56,83 @@ export const ConversationItem = ({
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
   const messageColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
 
-  // Fonction pour formater l'heure depuis une date
-  const formatTime = (dateString?: string): string => {
-    if (!dateString) return '';
+  // Fonction pour parser une date depuis différents formats
+  const parseDateToDate = (dateString?: string): Date | null => {
+    if (!dateString) return null;
     
     try {
       const raw = dateString.trim();
-
-      // Si le format est DD/MM/YYYY (sans heure), on ne peut pas afficher l'heure
-      // Dans ce cas, on retourne la date formatée de manière courte
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-        // Format DD/MM/YYYY - pas d'heure disponible
-        const [day, month] = raw.split('/');
-        return `${day}/${month}`; // Retourner seulement jour/mois
-      }
       
-      // Si la chaîne contient "invalid" ou est vide après trim, retourner une valeur par défaut
       if (raw.toLowerCase().includes('invalid') || raw === '') {
-        return '';
+        return null;
       }
 
-      // Gérer le format DD/MM/YYYY HH:mm:ss (ex: "13/01/2026 14:19:55")
+      // Format DD/MM/YYYY HH:mm:ss (ex: "13/01/2026 14:19:55")
       if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
         const [datePart, timePart] = raw.split(/\s+/);
         const [day, month, year] = datePart.split('/');
         const iso = `${year}-${month}-${day}T${timePart}`;
         const parsed = new Date(iso);
         if (!isNaN(parsed.getTime())) {
-          return parsed.toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          });
+          return parsed;
         }
       }
       
-      // Essayer de parser la date complète
+      // Format DD/MM/YYYY (sans heure)
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('/');
+        const iso = `${year}-${month}-${day}T00:00:00`;
+        const parsed = new Date(iso);
+        if (!isNaN(parsed.getTime())) {
+          return parsed;
+        }
+      }
+      
+      // Format ISO ou autre
       const date = new Date(raw);
-      
-      // Vérifier si la date est valide
-      if (isNaN(date.getTime())) {
-        // Si ce n'est pas une date valide, vérifier si c'est une date au format ISO
-        // ou retourner une chaîne vide pour éviter d'afficher "Invalid Date"
-        console.warn('Date invalide:', raw);
-        return '';
+      if (!isNaN(date.getTime())) {
+        return date;
       }
       
-      // Vérifier si l'heure est 00:00:00 (ce qui signifie qu'on n'avait pas l'heure)
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const seconds = date.getSeconds();
-      
-      // Si c'est exactement minuit (00:00:00), c'est probablement une date sans heure
-      if (hours === 0 && minutes === 0 && seconds === 0) {
-        // Vérifier si c'est aujourd'hui ou une date différente
-        const today = new Date();
-        const isToday = date.toDateString() === today.toDateString();
-        
-        if (isToday) {
-          return "Aujourd'hui";
-        } else {
-          // Afficher la date formatée (jour/mois)
-          return date.toLocaleDateString('fr-FR', { 
-            day: '2-digit', 
-            month: '2-digit' 
-          });
-        }
-      }
-      
-      // Formater pour afficher seulement l'heure (HH:MM)
-      return date.toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-    } catch (error) {
-      // En cas d'erreur, retourner la valeur originale
-      return dateString;
+      return null;
+    } catch {
+      return null;
     }
+  };
+
+  // Fonction pour formater l'heure/date style WhatsApp
+  const formatTime = (dateString?: string): string => {
+    const date = parseDateToDate(dateString);
+    if (!date) return '';
+    
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    
+    // Normaliser les dates pour comparer seulement le jour (sans l'heure)
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayDateOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+    const messageDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    // Aujourd'hui → afficher l'heure (HH:MM)
+    if (messageDateOnly.getTime() === todayDateOnly.getTime()) {
+      return date.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    }
+    
+    // Hier → afficher "Hier"
+    if (messageDateOnly.getTime() === yesterdayDateOnly.getTime()) {
+      return 'Hier';
+    }
+    
+    // Autres jours → afficher la date (JJ/MM)
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+    });
   };
 
   const formattedTime = formatTime(lastMessageTime);

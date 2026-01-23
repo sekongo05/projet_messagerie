@@ -110,9 +110,6 @@ const AddParticipantsModal = ({
         .map(p => p.userId)
         .filter((id: any) => id);
       
-      // Les participants avec status 'left_once' peuvent être réintégrés UNE SEULE FOIS
-      // Donc on ne les exclut pas de la liste
-      
       setExistingParticipantIds(cannotBeAddedIds);
       setExistingParticipants(existingParticipants);
       
@@ -120,15 +117,19 @@ const AddParticipantsModal = ({
       // - L'utilisateur connecté
       // - Les utilisateurs supprimés
       // - Les participants actifs (status === 'active')
+      // - Les participants avec hasLeft ou hasDefinitivelyLeft (left_once, rejoined, definitively_left) : ne pas les afficher
       const filteredContacts = usersList.filter(
         user => {
           if (user.isDeleted || user.id === currentUserId) {
             return false;
           }
           
-          // Exclure les participants actifs
           const existingParticipant = existingParticipants.find(p => p.userId === user.id);
-          if (existingParticipant && existingParticipant.state.status === 'active') {
+          if (!existingParticipant) return true;
+          
+          const status = existingParticipant.state.status;
+          if (status === 'active') return false;
+          if (status === 'left_once' || status === 'rejoined' || status === 'definitively_left') {
             return false;
           }
           

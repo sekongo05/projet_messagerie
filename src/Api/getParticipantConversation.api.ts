@@ -11,9 +11,15 @@ export interface ParticipantConversation {
 }
 
 
+export type GetParticipantsOptions = {
+  /** Inclure les anciens membres (hasLeft / hasDefinitivelyLeft) pour que tous voient "X a quitté le groupe" */
+  includeLeft?: boolean;
+};
+
 export const getParticipantsByConversationId = async (
   conversationId: number,
-  userId?: number
+  userId?: number,
+  options?: GetParticipantsOptions
 ) => {
   // Si userId n'est pas fourni, essayer de le récupérer depuis localStorage
   const resolvedUserId = userId ?? getCurrentUserId() ?? 1;
@@ -22,15 +28,20 @@ export const getParticipantsByConversationId = async (
     throw new Error('ID utilisateur requis. Veuillez vous connecter.');
   }
 
+  const data: { conversationId: number; includeLeft?: boolean } = {
+    conversationId,
+  };
+  if (options?.includeLeft === true) {
+    data.includeLeft = true;
+  }
+
   try {
     const response = await axios.post(
       `${API_URL}/participantConversation/getByCriteria`,
       {
         user: resolvedUserId,
         isSimpleLoading: false,
-        data: {
-          conversationId: conversationId
-        }
+        data,
       }
     );
 

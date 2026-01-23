@@ -3,6 +3,8 @@ import MessageInput from '../Metier/Messages/MessageInput';
 import InfoGroupe from './InfoGroupe';
 import type { Conversation } from '../Api/Conversation.api';
 import type { Message } from '../Api/Message.api';
+import { useCurrentUserLeftGroup } from '../Hooks/useCurrentUserLeftGroup';
+import { useMessagesWithLeaveEvents } from '../Hooks/useMessagesWithLeaveEvents';
 
 type ConversationViewProps = {
   activeConversationId: number | null;
@@ -92,6 +94,24 @@ const ConversationView = ({
     }
   };
 
+  const { currentUserHasLeft } = useCurrentUserLeftGroup(
+    activeConversationId,
+    currentUserId,
+    isGroupConversation
+  );
+
+  const messagesWithLeaveEvents = useMessagesWithLeaveEvents(
+    activeConversationId,
+    isGroupConversation,
+    messages,
+    currentUserId
+  );
+
+  const showInput = !currentUserHasLeft;
+  const borderColorInput = theme === 'dark' ? 'border-gray-900' : 'border-gray-300';
+  const bgColorInput = theme === 'dark' ? 'bg-black' : 'bg-white';
+  const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+
   return (
     <>
       {/* En-tête de la conversation */}
@@ -135,9 +155,9 @@ const ConversationView = ({
         </div>
       </div>
 
-      {/* Liste des messages */}
+      {/* Liste des messages + événements "X a quitté le groupe" */}
       <MessagesList
-        messages={messages}
+        messages={messagesWithLeaveEvents}
         currentUserId={currentUserId}
         conversationId={activeConversationId}
         theme={theme}
@@ -145,15 +165,25 @@ const ConversationView = ({
         onMessageDeleted={onMessageDeleted}
       />
 
-      {/* Input pour envoyer un message */}
-      <MessageInput
-        conversationId={activeConversationId}
-        userId={currentUserId}
-        onSend={handleSend}
-        theme={theme}
-        onError={onError}
-        onWarning={onWarning}
-      />
+      {/* Input pour envoyer un message ou barre "Vous avez quitté ce groupe" (type WhatsApp) */}
+      {showInput ? (
+        <MessageInput
+          conversationId={activeConversationId}
+          userId={currentUserId}
+          onSend={handleSend}
+          theme={theme}
+          onError={onError}
+          onWarning={onWarning}
+        />
+      ) : (
+        <div
+          className={`flex items-center justify-center p-3 border-t ${borderColorInput} ${bgColorInput}`}
+        >
+          <p className={`text-sm ${textSecondary}`}>
+            Vous avez quitté ce groupe
+          </p>
+        </div>
+      )}
     </>
   );
 };

@@ -9,6 +9,7 @@ import {
   canLeaveGroup
 } from '../utils/participantState.utils';
 import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
+import { dispatchParticipantLeft } from '../Hooks/useCurrentUserLeftGroup';
 
 type LeaveGroupButtonProps = {
   conversationId: number;
@@ -204,6 +205,7 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
           }
         }
         
+        dispatchParticipantLeft(conversationId);
         // Sortie réussie
         if (onLeave) {
           onLeave();
@@ -253,17 +255,18 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
 
   return (
     <div className={`${cardBg} rounded-2xl p-3 border ${borderColor} transition-all hover:shadow-lg hover:border-red-500/30`}>
-      <button
-        onClick={handleLeave}
-        disabled={loading}
-        className={`mx-auto ${buttonBg} text-white px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 relative overflow-hidden group`}
-      >
-        {/* Effet de brillance animé */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-        
-        <div className={`p-1.5 rounded-lg ${iconBg} backdrop-blur-sm relative z-10 group-hover:scale-110 transition-transform duration-300`}>
-          <FiLogOut className="w-4 h-4 relative z-10" />
-        </div>
+      {(participantState === null || participantState.canLeave) && (
+        <button
+          onClick={handleLeave}
+          disabled={loading}
+          className={`mx-auto ${buttonBg} text-white px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 relative overflow-hidden group`}
+        >
+          {/* Effet de brillance animé */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+          
+          <div className={`p-1.5 rounded-lg ${iconBg} backdrop-blur-sm relative z-10 group-hover:scale-110 transition-transform duration-300`}>
+            <FiLogOut className="w-4 h-4 relative z-10" />
+          </div>
           <span className="text-sm relative z-10 tracking-wide">
             {loading ? 'Traitement...' : participantState?.isRejoined ? 'Quitter définitivement' : 'Quitter le groupe'}
           </span>

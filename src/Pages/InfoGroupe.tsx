@@ -19,6 +19,7 @@ import {
 import { logDiagnostic } from '../utils/participantStateDiagnostic.utils';
 import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
 import { getCurrentUserId as getCurrentUserIdFromUtils } from '../utils/user.utils';
+import { dispatchParticipantLeft } from '../Hooks/useCurrentUserLeftGroup';
 
 type InfoGroupeProps = {
   conversation: Conversation;
@@ -569,6 +570,8 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         });
       }
       
+      // Signaler que l'utilisateur a quitté (pour masquer l'input immédiatement si pas de reload)
+      dispatchParticipantLeft(conversation.id);
       // Sortie réussie - recharger la page
       window.location.reload();
     } catch (err: any) {

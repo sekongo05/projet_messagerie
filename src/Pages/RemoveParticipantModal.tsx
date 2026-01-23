@@ -110,13 +110,12 @@ const RemoveParticipantModal = ({
         };
       });
 
-      // Filtrer pour exclure l'utilisateur connecté et les participants définitivement partis
+      // Filtrer pour exclure l'utilisateur connecté et les participants avec hasLeft ou hasDefinitivelyLeft
       const filteredParticipants = participantsWithUserInfo.filter(p => {
         if (p.userId === currentUserId) return false;
         
-        // Ne pas afficher les participants définitivement partis
         const state = getParticipantState(p);
-        return state.status !== 'definitively_left';
+        return state.status !== 'definitively_left' && state.status !== 'left_once' && state.status !== 'rejoined';
       });
 
       setParticipants(filteredParticipants);

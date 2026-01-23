@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getMessagesByConversation, getLastMessageFromMessages, sendTextMessage, uploadImageMessage, type Message } from '../Api/Message.api';
+import { getMessagesByConversation, sendTextMessage, uploadImageMessage, type Message } from '../Api/Message.api';
 import { getUsers, type User } from '../Api/User.api';
 import type { Conversation } from '../Api/Conversation.api';
 
@@ -114,38 +114,16 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
       
       setMessages(enrichedMessages);
 
-      // Mettre à jour le lastMessageTime de la conversation avec le timestamp du dernier message
-      // Utiliser enrichedMessages pour avoir le message final avec toutes les données normalisées
-      const lastMessage = getLastMessageFromMessages(enrichedMessages);
-      if (lastMessage && onConversationUpdate) {
-        // Si le message a une image, afficher "📷 Image", sinon utiliser le contenu
-        let lastMessageText = lastMessage.content?.trim() || '';
-        if (lastMessage.messageImgUrl) {
-          // Message avec image
-          lastMessageText = lastMessageText 
-            ? `${lastMessageText} 📷` 
-            : '📷 Image';
-        }
-        
-        // S'assurer que lastMessageText n'est pas vide (pour les messages texte uniquement)
-        if (!lastMessageText && !lastMessage.messageImgUrl) {
-          // Si pas de contenu ni d'image, ne pas mettre à jour (cas inhabituel)
-          console.warn('Message sans contenu ni image:', lastMessage);
-          return;
-        }
-        
-        onConversationUpdate(conversationId, {
-          lastMessage: lastMessageText,
-          lastMessageTime: lastMessage.createdAt,
-        } as Partial<Conversation>);
-      }
+      // Note: On ne met plus à jour lastMessage/lastMessageTime ici pour respecter
+      // la valeur backend par défaut. La mise à jour se fait uniquement dans handleSendMessage
+      // lorsqu'un nouveau message est envoyé.
     } catch (error) {
       console.error("Erreur lors du chargement des messages:", error);
       setMessages([]);
     } finally {
       setLoading(false);
     }
-  }, [currentUserId, onConversationUpdate]);
+  }, [currentUserId]);
 
   // Charger les messages quand une conversation est sélectionnée
   useEffect(() => {
@@ -218,11 +196,7 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
       }
 
       // Recharger les messages après envoi pour synchroniser avec le backend
-      // Cela va aussi mettre à jour le lastMessage avec les données complètes du backend
       await loadMessages(conversationId);
-      
-      // Note: On ne recharge plus toutes les conversations car loadMessages 
-      // met déjà à jour le lastMessageTime de la conversation active
     } catch (error: any) {
       console.error("Erreur lors de l'envoi du message :", error);
       const errorMessage = error.response?.data?.status?.message || error.message || "Erreur lors de l'envoi du message";

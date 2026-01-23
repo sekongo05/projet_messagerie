@@ -7,6 +7,7 @@ type GroupesProps = {
   onConversationDeleted?: () => void;
   activeConversationId?: number;
   theme?: 'light' | 'dark';
+  currentUserId?: number;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
   onWarning?: (message: string) => void;
@@ -18,6 +19,7 @@ const Groupes = ({
   onConversationDeleted,
   activeConversationId,
   theme = 'light',
+  currentUserId,
   onError,
   onSuccess,
   onWarning,
@@ -40,6 +42,7 @@ const Groupes = ({
       onConversationSelect={handleConversationSelect}
       onConversationDeleted={onConversationDeleted}
       theme={theme}
+      currentUserId={currentUserId}
       onError={onError}
       onSuccess={onSuccess}
       onWarning={onWarning}
