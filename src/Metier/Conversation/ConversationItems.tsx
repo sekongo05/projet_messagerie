@@ -56,16 +56,13 @@ export const ConversationItem = ({
   const timeColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
   const messageColor = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
 
-  // Fonction pour parser une date depuis différents formats
-  const parseDateToDate = (dateString?: string): Date | null => {
-    if (!dateString) return null;
-    
+  // Fonction pour parser une date depuis différents formats.
+  // hasTime indique si la chaîne contenait une heure (sinon on affiche "Aujourd'hui" au lieu de "00:00" pour ce jour).
+  const parseDateToDate = (dateString?: string): { date: Date | null; hasTime: boolean } => {
+    if (!dateString) return { date: null, hasTime: false };
     try {
       const raw = dateString.trim();
-      
-      if (raw.toLowerCase().includes('invalid') || raw === '') {
-        return null;
-      }
+      if (raw.toLowerCase().includes('invalid') || raw === '') return { date: null, hasTime: false };
 
       // Format DD/MM/YYYY HH:mm:ss (ex: "13/01/2026 14:19:55")
       if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
@@ -73,66 +70,69 @@ export const ConversationItem = ({
         const [day, month, year] = datePart.split('/');
         const iso = `${year}-${month}-${day}T${timePart}`;
         const parsed = new Date(iso);
-        if (!isNaN(parsed.getTime())) {
-          return parsed;
-        }
+        return { date: !isNaN(parsed.getTime()) ? parsed : null, hasTime: true };
       }
-      
-      // Format DD/MM/YYYY (sans heure)
+
+      // Format DD/MM/YYYY (sans heure) → le backend envoie souvent la date seule, on n'invente pas 00:00
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
         const [day, month, year] = raw.split('/');
-        const iso = `${year}-${month}-${day}T00:00:00`;
+        const iso = `${year}-${month}-${day}T12:00:00`;
         const parsed = new Date(iso);
-        if (!isNaN(parsed.getTime())) {
-          return parsed;
-        }
+        return { date: !isNaN(parsed.getTime()) ? parsed : null, hasTime: false };
       }
-      
-      // Format ISO ou autre
+
+      // Format ISO date seule YYYY-MM-DD (sans heure)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const parsed = new Date(raw + 'T12:00:00');
+        return { date: !isNaN(parsed.getTime()) ? parsed : null, hasTime: false };
+      }
+
+      // Format ISO avec heure (ex. 2026-01-13T14:30:00)
+      if (/T\d{2}:\d{2}/.test(raw)) {
+        const date = new Date(raw);
+        return { date: !isNaN(date.getTime()) ? date : null, hasTime: true };
+      }
+
+      // Fallback (autres formats)
       const date = new Date(raw);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-      
-      return null;
+      return { date: !isNaN(date.getTime()) ? date : null, hasTime: false };
     } catch {
-      return null;
+      return { date: null, hasTime: false };
     }
   };
 
-  // Fonction pour formater l'heure/date style WhatsApp
+  // Formater heure/date style WhatsApp (liste des conversations)
+  // Aujourd'hui → HH:MM (ou "Aujourd'hui" si pas d'heure) | Hier → "Hier" | Cette année → "15 janv." | Autres années → "15/01/24"
   const formatTime = (dateString?: string): string => {
-    const date = parseDateToDate(dateString);
+    const { date, hasTime } = parseDateToDate(dateString);
     if (!date) return '';
-    
+
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    
-    // Normaliser les dates pour comparer seulement le jour (sans l'heure)
+
     const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const yesterdayDateOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
     const messageDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    
-    // Aujourd'hui → afficher l'heure (HH:MM)
+
+    // Aujourd'hui → heure HH:MM si connue, sinon "Aujourd'hui"
     if (messageDateOnly.getTime() === todayDateOnly.getTime()) {
-      return date.toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
+      if (!hasTime) return 'Aujourd\'hui';
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
-    
-    // Hier → afficher "Hier"
+
+    // Hier → "Hier"
     if (messageDateOnly.getTime() === yesterdayDateOnly.getTime()) {
       return 'Hier';
     }
-    
-    // Autres jours → afficher la date (JJ/MM)
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-    });
+
+    // Cette année → "15 janv."
+    if (date.getFullYear() === today.getFullYear()) {
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+
+    // Autres années → "15/01/24"
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   };
 
   const formattedTime = formatTime(lastMessageTime);

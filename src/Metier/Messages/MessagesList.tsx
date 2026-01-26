@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MessageItem } from './MessageItems';
 import type { MessageOrSystemEvent } from '../../Hooks/useMessagesWithLeaveEvents';
-import { isSystemLeaveEvent } from '../../utils/systemLeaveEvent.utils';
+import { isSystemLeaveEvent, isSystemJoinEvent } from '../../utils/systemLeaveEvent.utils';
 
 type MessagesListProps = {
   messages: MessageOrSystemEvent[];
@@ -12,7 +12,8 @@ type MessagesListProps = {
   onMessageDeleted?: () => void;
 };
 
-const formatDayLabel = (isoDate: string) => {
+// Séparateurs de jour style WhatsApp : "Aujourd'hui" | "Hier" | "15 janvier" | "15 janvier 2024"
+const formatDayLabel = (isoDate: string): string => {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return '';
 
@@ -22,10 +23,12 @@ const formatDayLabel = (isoDate: string) => {
 
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
-  const sameYesterday = d.toDateString() === yesterday.toDateString();
-  if (sameYesterday) return 'Hier';
+  if (d.toDateString() === yesterday.toDateString()) return 'Hier';
 
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (d.getFullYear() === today.getFullYear()) {
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  }
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 export const MessagesList = ({
@@ -69,7 +72,7 @@ export const MessagesList = ({
           const showDaySeparator =
             idx === 0 ||
             (prev?.createdAt && item.createdAt && formatDayLabel(prev.createdAt) !== formatDayLabel(item.createdAt));
-          const key = isSystemLeaveEvent(item) ? item.id : `msg-${item.id}`;
+          const key = (isSystemLeaveEvent(item) || isSystemJoinEvent(item)) ? item.id : `msg-${item.id}`;
 
           return (
             <div key={key} className="flex flex-col gap-2">
@@ -93,6 +96,18 @@ export const MessagesList = ({
                       theme === 'dark'
                         ? 'bg-gray-800/60 text-gray-400 border border-gray-700/50'
                         : 'bg-gray-200/80 text-gray-600 border border-gray-300/60'
+                    }`}
+                  >
+                    {item.content}
+                  </span>
+                </div>
+              ) : isSystemJoinEvent(item) ? (
+                <div className="flex justify-center">
+                  <span
+                    className={`px-3 py-1.5 rounded-lg text-xs max-w-[85%] text-center ${
+                      theme === 'dark'
+                        ? 'bg-gray-800/50 text-green-400/90 border border-gray-700/50'
+                        : 'bg-green-50/90 text-green-700 border border-green-200/80'
                     }`}
                   >
                     {item.content}

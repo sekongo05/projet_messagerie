@@ -23,6 +23,7 @@ type ChatProps = {
 const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   const { theme, toggleTheme } = useTheme();
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [draftContactId, setDraftContactId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');
   const [showCreateGroupe, setShowCreateGroupe] = useState(false);
   const { toasts, removeToast, error: showError, success: showSuccess, warning: showWarning } = useToast();
@@ -56,11 +57,13 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
   // Gérer la sélection d'une conversation
   const handleConversationSelect = (conversationId: number) => {
     setActiveConversationId(conversationId);
+    setDraftContactId(null);
   };
 
-  // Gérer la fermeture d'une conversation
+  // Gérer la fermeture d'une conversation ou d'un brouillon
   const handleCloseConversation = () => {
     setActiveConversationId(null);
+    setDraftContactId(null);
   };
 
   // Gérer la déconnexion
@@ -81,10 +84,15 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
     loadConversations,
     handleContactSelect,
     updateConversation,
+    createPrivateWithFirstMessage,
   } = useConversations({
     currentUserId,
     onActiveTabChange: setActiveTab,
     onConversationSelect: handleConversationSelect,
+    onOpenDraftWithContact: (contactId) => {
+      setActiveConversationId(null);
+      setDraftContactId(contactId);
+    },
     onError: showError,
     onWarning: showWarning,
   });
@@ -218,12 +226,20 @@ const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
       <div className="flex-1 flex flex-col">
         <ConversationView
           activeConversationId={activeConversationId}
+          draftContactId={draftContactId}
           conversations={conversations}
           messages={messages}
           currentUserId={currentUserId}
           theme={theme}
           onCloseConversation={handleCloseConversation}
           onSendMessage={handleSendMessage}
+          onSendFirstMessage={async (formData, contactId) => {
+            const id = await createPrivateWithFirstMessage(contactId, formData);
+            if (id) {
+              setActiveConversationId(id);
+              setDraftContactId(null);
+            }
+          }}
           onMessageDeleted={activeConversationId ? () => loadMessages(activeConversationId) : undefined}
           onError={showError}
           onWarning={showWarning}

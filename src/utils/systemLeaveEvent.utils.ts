@@ -21,3 +21,26 @@ export function isSystemLeaveEvent(item: unknown): item is SystemLeaveEvent {
     (item as SystemLeaveEvent).type === 'system_leave'
   );
 }
+
+/**
+ * Événements système "X a rejoint le groupe" / "Y a ajouté X" (style WhatsApp)
+ */
+export type SystemJoinEvent = {
+  id: string;
+  type: 'system_join';
+  content: string;
+  createdAt: string;
+  userId: number;
+  userName?: string;
+  addedBy?: number;
+  addedByName?: string;
+};
+
+export function isSystemJoinEvent(item: unknown): item is SystemJoinEvent {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'type' in item &&
+    (item as SystemJoinEvent).type === 'system_join'
+  );
+}

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { getConversations, type Conversation } from '../Api/Conversation.api';
 import { getParticipantsByConversationId } from '../Api/getParticipantConversation.api';
 import { createConversation } from '../Api/ConversationCreate.api';
+import { uploadImageMessage } from '../Api/uploadImage.api';
 import { getUsers, type User } from '../Api/User.api';
 import { shouldDisplayConversation, normalizeParticipant } from '../utils/participantState.utils';
 
@@ -9,6 +10,8 @@ type UseConversationsProps = {
   currentUserId: number;
   onActiveTabChange?: (tab: 'all' | 'prive' | 'contacts' | 'groupe') => void;
   onConversationSelect?: (conversationId: number) => void;
+  /** Appelé quand on clique sur un contact sans conversation existante : ouvre le brouillon au lieu de créer. */
+  onOpenDraftWithContact?: (contactId: number) => void;
   onError?: (message: string) => void;
   onWarning?: (message: string) => void;
 };
@@ -17,6 +20,7 @@ export const useConversations = ({
   currentUserId, 
   onActiveTabChange,
   onConversationSelect,
+  onOpenDraftWithContact,
   onError,
   onWarning
 }: UseConversationsProps) => {
@@ -324,70 +328,13 @@ export const useConversations = ({
           onActiveTabChange('prive');
         }
       } else {
-        // Si la conversation n'existe pas, la créer entre l'utilisateur connecté et le contact
-        console.log(`Création d'une nouvelle conversation privée entre l'utilisateur connecté (${currentUserId}) et le contact (${contactId})`);
-        setLoading(true);
-        
-        try {
-          // Créer la conversation avec l'utilisateur connecté comme créateur et le contact comme interlocuteur
-          // Le backend requiert au moins un message (messageContent ou messageImgUrl) pour les conversations privées
-          // On envoie un message par défaut pour satisfaire cette exigence
-          const response: any = await createConversation(
-            currentUserId, // L'utilisateur connecté qui crée la conversation
-            "PRIVEE",
-            {
-              interlocuteurId: contactId, // Le contact sur lequel on a cliqué
-              messageContent: " " // Message avec un espace pour satisfaire l'exigence du backend (message non vide)
-            }
-          );
-
-          console.log('Réponse de createConversation:', response);
-
-          // Extraire l'ID de la conversation créée
-          const newConversationId = response?.items?.[0]?.id || 
-                                   response?.data?.items?.[0]?.id ||
-                                   response?.items?.[0]?.conversationId ||
-                                   response?.id ||
-                                   response?.conversationId;
-
-          console.log('ID de conversation extrait:', newConversationId);
-
-          if (newConversationId) {
-            console.log('Conversation créée avec succès:', newConversationId);
-            
-            // Recharger les conversations pour inclure la nouvelle
-            await loadConversations();
-            
-            // Attendre un peu pour que la nouvelle conversation soit disponible
-            setTimeout(() => {
-              console.log('Ouverture de la conversation:', newConversationId);
-              if (onConversationSelect) {
-                onConversationSelect(newConversationId);
-              }
-              // Basculer vers l'onglet privé pour voir la conversation
-              if (onActiveTabChange) {
-                onActiveTabChange('prive');
-              }
-            }, 500);
-          } else {
-            console.error('Impossible de récupérer l\'ID de la conversation créée. Réponse complète:', response);
-            if (onError) {
-              onError('Erreur: Impossible de récupérer l\'ID de la conversation créée');
-            } else {
-              alert('Erreur: Impossible de récupérer l\'ID de la conversation créée');
-            }
-          }
-        } catch (error: any) {
-          console.error('Erreur lors de la création de la conversation:', error);
-          console.error('Détails de l\'erreur:', error.response?.data || error.message);
-          const errorMessage = `Erreur lors de la création de la conversation: ${error.response?.data?.status?.message || error.message || 'Erreur inconnue'}`;
-          if (onError) {
-            onError(errorMessage);
-          } else {
-            alert(errorMessage);
-          }
-        } finally {
-          setLoading(false);
+        // Si la conversation n'existe pas : ouvrir un brouillon (la conversation ne sera créée qu'à l'envoi du premier message)
+        console.log(`Ouverture d'un brouillon avec le contact ${contactId} (conversation créée à l'envoi du premier message)`);
+        if (onOpenDraftWithContact) {
+          onOpenDraftWithContact(contactId);
+        }
+        if (onActiveTabChange) {
+          onActiveTabChange('prive');
         }
       }
     } catch (error: any) {
@@ -399,7 +346,7 @@ export const useConversations = ({
         alert(errorMessage);
       }
     }
-  }, [currentUserId, conversations, loadConversations, onConversationSelect, onActiveTabChange, onError, onWarning]);
+  }, [currentUserId, conversations, onConversationSelect, onOpenDraftWithContact, onActiveTabChange, onError, onWarning]);
 
   // Fonction pour mettre à jour une conversation dans la liste
   const updateConversation = useCallback((conversationId: number, updates: Partial<Conversation>) => {
@@ -413,11 +360,80 @@ export const useConversations = ({
     );
   }, []);
 
+  /** Crée une conversation privée avec le premier message (texte et/ou image) ; la conversation apparaît dans la liste. Retourne l'id ou null. */
+  const createPrivateWithFirstMessage = useCallback(async (contactId: number, formData: FormData): Promise<number | null> => {
+    const content = (formData.get('content') as string)?.trim?.() ?? '';
+    const file = formData.get('file') as File | null;
+    const hasFile = file && file instanceof File;
+
+    if (!content && !hasFile) {
+      if (onWarning) onWarning('Veuillez entrer un message ou envoyer une image pour démarrer la conversation.');
+      else alert('Veuillez entrer un message ou envoyer une image pour démarrer la conversation.');
+      return null;
+    }
+
+    setLoading(true);
+    try {
+      let newId: number | null = null;
+
+      if (hasFile) {
+        const response: any = await createConversation(currentUserId, 'PRIVEE', {
+          interlocuteurId: contactId,
+          messageContent: ' ',
+        });
+        newId =
+          response?.items?.[0]?.id ??
+          response?.data?.items?.[0]?.id ??
+          response?.items?.[0]?.conversationId ??
+          response?.id ??
+          response?.conversationId ??
+          null;
+        if (!newId) {
+          if (onError) onError('Impossible de récupérer l\'ID de la conversation créée.');
+          else alert('Impossible de récupérer l\'ID de la conversation créée.');
+          return null;
+        }
+        await uploadImageMessage(
+          { conversationId: newId, file, content: content || undefined },
+          currentUserId
+        );
+      } else {
+        const response: any = await createConversation(currentUserId, 'PRIVEE', {
+          interlocuteurId: contactId,
+          messageContent: content,
+        });
+        newId =
+          response?.items?.[0]?.id ??
+          response?.data?.items?.[0]?.id ??
+          response?.items?.[0]?.conversationId ??
+          response?.id ??
+          response?.conversationId ??
+          null;
+        if (!newId) {
+          if (onError) onError('Impossible de récupérer l\'ID de la conversation créée.');
+          else alert('Impossible de récupérer l\'ID de la conversation créée.');
+          return null;
+        }
+      }
+
+      await loadConversations();
+      return newId;
+    } catch (err: any) {
+      const msg = err?.response?.data?.status?.message || err?.message || 'Erreur lors de la création.';
+      if (onError) onError(msg);
+      else alert(msg);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId, loadConversations, onError, onWarning]);
+
   return {
     conversations,
     loading,
     loadConversations,
     handleContactSelect,
     updateConversation,
+    createPrivateWithFirstMessage,
   };
 };

@@ -110,12 +110,13 @@ const RemoveParticipantModal = ({
         };
       });
 
-      // Filtrer pour exclure l'utilisateur connecté et les participants avec hasLeft ou hasDefinitivelyLeft
+      // Filtrer : exclure soi-même et les participants déjà sortis (definitively_left, left_once).
+      // Inclure active et rejoined : membres actuellement dans le groupe, expulsables (comme WhatsApp).
       const filteredParticipants = participantsWithUserInfo.filter(p => {
         if (p.userId === currentUserId) return false;
         
         const state = getParticipantState(p);
-        return state.status !== 'definitively_left' && state.status !== 'left_once' && state.status !== 'rejoined';
+        return state.status !== 'definitively_left' && state.status !== 'left_once';
       });
 
       setParticipants(filteredParticipants);

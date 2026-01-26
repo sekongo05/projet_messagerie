@@ -41,6 +41,13 @@ const Register = ({ onNavigateToLogin, theme = 'light' }: RegisterProps = {}) =>
           localStorage.setItem('currentUser', JSON.stringify(userData));
         }
         localStorage.setItem('userEmail', email.trim());
+
+        // Redirection directe vers la page de connexion
+        if (onNavigateToLogin) {
+          onNavigateToLogin();
+        } else {
+          window.location.href = '/login';
+        }
       }
     } catch (err: any) {
       // Gérer les erreurs réseau ou autres erreurs

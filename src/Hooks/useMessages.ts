@@ -119,11 +119,11 @@ export const useMessages = ({ activeConversationId, currentUserId, onConversatio
       // lorsqu'un nouveau message est envoyé.
     } catch (error) {
       console.error("Erreur lors du chargement des messages:", error);
-      setMessages([]);
+      onError?.("Erreur lors du chargement des messages. " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
-  }, [currentUserId]);
+  }, [currentUserId, onError]);
 
   // Charger les messages quand une conversation est sélectionnée
   useEffect(() => {

@@ -71,17 +71,30 @@ export const MessageItem = ({
     ? getColorForParticipant(message.senderName, message.createdBy)
     : null;
   
-  const formatTime = (timestamp: string) => {
+  // Heure + date style WhatsApp sous la bulle : "14:30" | "Hier 14:30" | "15 janv. 14:30" | "15/01/24 14:30"
+  const formatDateTimeWhatsApp = (timestamp: string): string => {
     try {
       const date = new Date(timestamp);
       if (isNaN(date.getTime())) return '';
-      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const t = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+      const msgOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      if (msgOnly.getTime() === todayOnly.getTime()) return t;
+      if (msgOnly.getTime() === yesterdayOnly.getTime()) return `Hier ${t}`;
+      if (date.getFullYear() === today.getFullYear()) {
+        return `${date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${t}`;
+      }
+      return `${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${t}`;
     } catch {
       return '';
     }
   };
 
-  const time = formatTime(message.createdAt);
+  const time = formatDateTimeWhatsApp(message.createdAt);
 
   // Fonction utilitaire pour vérifier si le message a une image valide
   const hasValidImage = (): boolean => {

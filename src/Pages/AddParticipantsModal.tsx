@@ -10,6 +10,7 @@ import {
   getParticipantState,
   canRejoinParticipant
 } from '../utils/participantState.utils';
+import { dispatchParticipantLeft } from '../Hooks/useCurrentUserLeftGroup';
 import { logDiagnostic, diagnoseMultipleParticipants } from '../utils/participantStateDiagnostic.utils';
 import { validateCreateResponse, logValidation } from '../utils/participantStateValidation.utils';
 
@@ -116,8 +117,9 @@ const AddParticipantsModal = ({
       // Filtrer pour exclure :
       // - L'utilisateur connecté
       // - Les utilisateurs supprimés
-      // - Les participants actifs (status === 'active')
-      // - Les participants avec hasLeft ou hasDefinitivelyLeft (left_once, rejoined, definitively_left) : ne pas les afficher
+      // - Les participants actifs (status === 'active') : déjà dans le groupe
+      // - Les participants réintégrés (rejoined) ou définitivement partis (definitively_left)
+      // - On INCLUT left_once : réintégration possible (comme ré-invitation WhatsApp)
       const filteredContacts = usersList.filter(
         user => {
           if (user.isDeleted || user.id === currentUserId) {
@@ -129,10 +131,10 @@ const AddParticipantsModal = ({
           
           const status = existingParticipant.state.status;
           if (status === 'active') return false;
-          if (status === 'left_once' || status === 'rejoined' || status === 'definitively_left') {
+          if (status === 'rejoined' || status === 'definitively_left') {
             return false;
           }
-          
+          // left_once : on inclut (réintégration via createParticipant)
           return true;
         }
       );
@@ -375,7 +377,9 @@ const AddParticipantsModal = ({
             'Reintégration détectée': !!participant.recreatedAt || !!participant.recreated_at || participant.hasLeft === false
           });
         });
-        
+
+        dispatchParticipantLeft(conversationId);
+
         // ✅ Passer les participants à onSuccess
         if (onSuccess) {
           onSuccess(response.items);
