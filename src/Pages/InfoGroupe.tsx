@@ -339,9 +339,9 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         const lowerMessage = apiMessage.toLowerCase();
         
         if (lowerMessage.includes('admin') || lowerMessage.includes('administrateur') || lowerMessage.includes('permission')) {
-          errorMessage = '⚠️ Permission requise : Seuls les administrateurs peuvent promouvoir d\'autres membres.\n\n💡 Vous devez avoir les droits d\'administration pour effectuer cette action.';
+          errorMessage = ' Permission requise : Seuls les administrateurs peuvent promouvoir d\'autres membres.\n\n💡 Vous devez avoir les droits d\'administration pour effectuer cette action.';
         } else if (lowerMessage.includes('introuvable') || lowerMessage.includes('not found')) {
-          errorMessage = 'ℹ️ Participant introuvable : Ce membre n\'existe peut-être plus dans le groupe.';
+          errorMessage = 'Participant introuvable : Ce membre n\'existe peut-être plus dans le groupe.';
         } else if (apiMessage && apiMessage.trim() !== '') {
           errorMessage = `❌ Erreur : ${apiMessage}\n\n💡 Veuillez réessayer.`;
         } else {
@@ -358,12 +358,12 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
       }
     } catch (err: any) {
       console.error('Erreur lors de la promotion admin:', err);
-      let errorMessage = '🌐 Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+      let errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
       
       if (err.response?.data?.status?.message) {
-        errorMessage = `❌ Erreur : ${err.response.data.status.message}`;
+        errorMessage = `Erreur : ${err.response.data.status.message}`;
       } else if (err.message) {
-        errorMessage = `❌ Erreur technique : ${err.message}`;
+        errorMessage = ` Erreur technique : ${err.message}`;
       }
       
       setAdminError(errorMessage);
@@ -381,7 +381,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
     try {
       const currentUserId = getCurrentUserId();
       if (!currentUserId) {
-        setAdminError('❌ Erreur : Utilisateur non connecté.');
+        setAdminError('Erreur : Utilisateur non connecté.');
         setTimeout(() => setAdminError(''), 5000);
         return;
       }
@@ -394,13 +394,13 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         const lowerMessage = apiMessage.toLowerCase();
         
         if (lowerMessage.includes('admin') || lowerMessage.includes('administrateur') || lowerMessage.includes('permission')) {
-          errorMessage = '⚠️ Permission requise : Seuls les administrateurs peuvent retirer les droits d\'administration.\n\n💡 Vous devez avoir les droits d\'administration pour effectuer cette action.';
+          errorMessage = ' Permission requise : Seuls les administrateurs peuvent retirer les droits d\'administration.\n\n Vous devez avoir les droits d\'administration pour effectuer cette action.';
         } else if (lowerMessage.includes('introuvable') || lowerMessage.includes('not found')) {
-          errorMessage = 'ℹ️ Participant introuvable : Ce membre n\'existe peut-être plus dans le groupe.';
+          errorMessage = 'Participant introuvable : Ce membre n\'existe peut-être plus dans le groupe.';
         } else if (apiMessage && apiMessage.trim() !== '') {
-          errorMessage = `❌ Erreur : ${apiMessage}\n\n💡 Veuillez réessayer.`;
+          errorMessage = `Erreur : ${apiMessage}\n\n Veuillez réessayer.`;
         } else {
-          errorMessage = '❌ Oups ! Une erreur s\'est produite lors de la rétrogradation.\n\n🔄 Veuillez réessayer.';
+          errorMessage = 'Oups ! Une erreur s\'est produite lors de la rétrogradation.\n\n Veuillez réessayer.';
         }
         
         setAdminError(errorMessage);
@@ -413,12 +413,12 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
       }
     } catch (err: any) {
       console.error('Erreur lors de la rétrogradation admin:', err);
-      let errorMessage = '🌐 Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+      let errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
       
       if (err.response?.data?.status?.message) {
-        errorMessage = `❌ Erreur : ${err.response.data.status.message}`;
+        errorMessage = ` Erreur : ${err.response.data.status.message}`;
       } else if (err.message) {
-        errorMessage = `❌ Erreur technique : ${err.message}`;
+        errorMessage = `Erreur technique : ${err.message}`;
       }
       
       setAdminError(errorMessage);
@@ -432,7 +432,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
   const handleLeaveGroup = useCallback(async () => {
     const currentUserId = getCurrentUserId();
     if (!currentUserId) {
-      setLeaveGroupError('❌ Erreur : Utilisateur non connecté.');
+      setLeaveGroupError(' Erreur : Utilisateur non connecté.');
       setTimeout(() => setLeaveGroupError(''), 5000);
       return;
     }
@@ -447,14 +447,14 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
       const state = getParticipantState(normalized);
       
       if (!canLeave) {
-        setLeaveGroupError('⚠️ Vous avez déjà quitté définitivement ce groupe.');
+        setLeaveGroupError('Vous avez déjà quitté définitivement ce groupe.');
         setTimeout(() => setLeaveGroupError(''), 5000);
         return;
       }
       
       // Message de confirmation selon l'état
       const confirmMessage = state.status === 'rejoined'
-        ? '⚠️ Attention : Ce sera votre 2ème départ. Vous ne pourrez plus revenir dans ce groupe. Êtes-vous sûr de vouloir quitter définitivement ?'
+        ? 'Êtes-vous sûr de vouloir quitter définitivement ?'
         : 'Êtes-vous sûr de vouloir quitter ce groupe ?';
       
       if (!window.confirm(confirmMessage)) {
@@ -472,7 +472,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
     try {
       const currentUserId = getCurrentUserId();
       if (!currentUserId) {
-        setLeaveGroupError('❌ Erreur : Utilisateur non connecté.');
+        setLeaveGroupError('Erreur : Utilisateur non connecté.');
         setTimeout(() => setLeaveGroupError(''), 5000);
         return;
       }
@@ -487,7 +487,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
       console.log('Réponse complète après avoir quitté le groupe:', response);
       console.log('Structure complète de la réponse:', JSON.stringify(response, null, 2));
 
-      // ✅ Vérifier d'abord les erreurs
+      //  Vérifier d'abord les erreurs
       if (response.hasError) {
         const apiMessage = response.status?.message || '';
         let errorMessage = '';
@@ -495,19 +495,19 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         const lowerMessage = apiMessage.toLowerCase();
         
         if (lowerMessage.includes('admin') || lowerMessage.includes('administrateur') || lowerMessage.includes('administrator')) {
-          errorMessage = '⚠️ Action impossible : En tant qu\'administrateur, vous ne pouvez pas quitter le groupe directement.\n\n💡 Solution : Transférez d\'abord les droits d\'administration à un autre membre du groupe avant de le quitter.';
+          errorMessage = ' Action impossible : En tant qu\'administrateur, vous ne pouvez pas quitter le groupe directement.\n\n Solution : Transférez d\'abord les droits d\'administration à un autre membre du groupe avant de le quitter.';
         } else if (lowerMessage.includes('dernier') || lowerMessage.includes('last') || lowerMessage.includes('seul')) {
-          errorMessage = '⚠️ Action impossible : Vous êtes le dernier membre de ce groupe.\n\n💡 Solution : Pour supprimer définitivement le groupe, contactez un administrateur système ou utilisez l\'option de suppression du groupe si elle est disponible.';
+          errorMessage = ' Action impossible : Vous êtes le dernier membre de ce groupe.\n\n💡 Solution : Pour supprimer définitivement le groupe, contactez un administrateur système ou utilisez l\'option de suppression du groupe si elle est disponible.';
         } else if (lowerMessage.includes('introuvable') || lowerMessage.includes('not found') || lowerMessage.includes('n\'existe pas')) {
-          errorMessage = 'ℹ️ Information : Il semble que vous ayez déjà quitté ce groupe ou que celui-ci n\'existe plus.\n\n🔄 La liste des conversations sera mise à jour automatiquement.';
+          errorMessage = 'Information : Il semble que vous ayez déjà quitté ce groupe ou que celui-ci n\'existe plus.\n\n La liste des conversations sera mise à jour automatiquement.';
         } else if (lowerMessage.includes('permission') || lowerMessage.includes('autorisé') || lowerMessage.includes('authorized') || lowerMessage.includes('accès')) {
-          errorMessage = '🚫 Permission refusée : Vous n\'avez pas les autorisations nécessaires pour quitter ce groupe.\n\n💡 Veuillez contacter un administrateur du groupe pour obtenir de l\'aide.';
+          errorMessage = ' Permission refusée : Vous n\'avez pas les autorisations nécessaires pour quitter ce groupe.\n\n Veuillez contacter un administrateur du groupe pour obtenir de l\'aide.';
         } else if (lowerMessage.includes('réseau') || lowerMessage.includes('network') || lowerMessage.includes('timeout') || lowerMessage.includes('connexion')) {
-          errorMessage = '🌐 Problème de connexion : Impossible de contacter le serveur.\n\n🔄 Vérifiez votre connexion internet et réessayez dans quelques instants.';
+          errorMessage = 'Problème de connexion : Impossible de contacter le serveur.\n\n Vérifiez votre connexion internet et réessayez dans quelques instants.';
         } else if (apiMessage && apiMessage.trim() !== '') {
-          errorMessage = `❌ Erreur : ${apiMessage}\n\n💡 Veuillez réessayer ou contacter le support si le problème persiste.`;
+          errorMessage = `Erreur : ${apiMessage}\n\n Veuillez réessayer ou contacter le support si le problème persiste.`;
         } else {
-          errorMessage = '❌ Oups ! Une erreur inattendue s\'est produite lors de votre tentative de quitter le groupe.\n\n🔄 Veuillez réessayer dans quelques instants. Si le problème persiste, rafraîchissez la page.';
+          errorMessage = ' Oups ! Une erreur inattendue s\'est produite lors de votre tentative de quitter le groupe.\n\n Veuillez réessayer dans quelques instants. Si le problème persiste, rafraîchissez la page.';
         }
         
         setLeaveGroupError(errorMessage);
@@ -517,7 +517,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         return;
       }
       
-      // ✅ Vérifier que items existe et contient au moins un élément
+      // Vérifier que items existe et contient au moins un élément
       if (response.items && response.items.length > 0) {
         const updatedParticipant = response.items[0];
         
@@ -535,7 +535,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
             logValidation(validation, 'Quitter le groupe');
             
             if (!validation.isValid) {
-              console.error('🚨 PROBLÈME BACKEND: La logique métier n\'est pas respectée lors de la sortie du groupe');
+              console.error('PROBLÈME BACKEND: La logique métier n\'est pas respectée lors de la sortie du groupe');
               const state = getParticipantState(normalizeParticipant(currentUserParticipant));
               if (state.status === 'active') {
                 console.error('1er départ attendu: hasLeft=true, leftAt et leftBy remplis');
@@ -583,7 +583,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
         if (apiMsg.includes('réseau') || apiMsg.includes('network') || apiMsg.includes('timeout')) {
           errorMessage = '🌐 Problème de connexion : Le serveur ne répond pas.\n\n🔄 Vérifiez votre connexion internet et réessayez. Si le problème persiste, le serveur peut être temporairement indisponible.';
         } else {
-          errorMessage = `❌ Erreur : ${err.response.data.status.message}\n\n💡 Veuillez réessayer ou rafraîchir la page.`;
+          errorMessage = ` Erreur : ${err.response.data.status.message}\n\n💡 Veuillez réessayer ou rafraîchir la page.`;
         }
       } else if (err.message) {
         if (err.message.toLowerCase().includes('network') || err.message.toLowerCase().includes('timeout')) {
@@ -633,7 +633,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
             <div className="flex items-center gap-2 flex-wrap">
               <p className={`${textPrimary} font-medium text-sm`}>
                 {isOwnParticipant ? (
-                  <span className="italic">(Vous)</span>
+                  <span className="italic">Vous</span>
                 ) : (
                   participant.prenoms && participant.nom
                     ? `${participant.prenoms} ${participant.nom}`
@@ -676,7 +676,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
               )}
               
               {/* Badge d'état du participant (quitté, réintégré, etc.) */}
-              {participantState.status !== 'active' && (
+              {/*participantState.status !== 'active' && (
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   participantState.status === 'left_once'
                     ? theme === 'dark'
@@ -691,18 +691,17 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
                   {participantState.status === 'left_once' && '🟡 A quitté'}
                   {participantState.status === 'rejoined' && '🟢 Réintégré'}
                 </span>
-              )}
+              ) */} 
             </div>
-            {participant.email && (
+            { /*participant.email && (
               <p className={`text-xs ${textSecondary} mt-0.5`}>{participant.email}</p>
-            )}
+            )*/}
             {/* Afficher le message d'état si le participant n'est pas actif */}
             {participantState.status !== 'active' && (
               <p className={`text-xs ${textSecondary} mt-0.5 italic`}>
                 {statusMessage}
                 {normalizedParticipant.recreatedAt && normalizedParticipant.recreatedBy && (
                   <span className="ml-1">
-                    (par utilisateur #{normalizedParticipant.recreatedBy})
                   </span>
                 )}
               </p>
@@ -997,7 +996,7 @@ const InfoGroupe = ({ conversation, theme: themeProp, onWarning, onError }: Info
                                 )}
                                 {participantState.status === 'definitively_left' && (
                                   <p className={`text-xs ${textSecondary} opacity-60 mt-1 italic`}>
-                                    A quitté définitivement
+                                    A quitté le groupe
                                     {normalizedParticipant.definitivelyLeftAt && (
                                       <span className="ml-1">le {normalizedParticipant.definitivelyLeftAt}</span>
                                     )}
