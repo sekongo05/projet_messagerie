@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { CgAdd, CgExport, CgProfile, CgLogOut } from "react-icons/cg";
-import { exportConversations } from '../Api/exportConversation.api';
+import { exportAllConversations } from '../Api/exportAll.api';
 
 type ChatHeaderProps = {
   theme?: 'light' | 'dark';
@@ -233,7 +233,7 @@ const ChatHeader = ({
           <button 
             onClick={async () => {
               try {
-                await exportConversations();
+                await exportAllConversations();
               } catch (error: any) {
                 console.error('Erreur lors de l\'export:', error);
                 if (onError) {
