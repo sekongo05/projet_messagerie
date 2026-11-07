@@ -230,7 +230,7 @@ const ConversationView = ({
       {/* Input pour envoyer un message ou barre "Vous avez quitté ce groupe" (type WhatsApp) */}
       {showInput ? (
         <MessageInput
-          conversationId={activeConversationId}
+          conversationId={activeConversationId ?? 0}
           userId={currentUserId}
           onSend={handleSend}
           theme={theme}

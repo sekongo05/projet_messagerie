@@ -21,7 +21,7 @@ type ChatProps = {
 };
 
 const Chat = ({ onNavigateToProfile }: ChatProps = {}) => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [draftContactId, setDraftContactId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'prive' | 'contacts' | 'groupe'>('prive');

@@ -96,7 +96,6 @@ const NouveauContact = ({
   const bgColor = theme === 'dark' ? 'bg-black' : 'bg-white';
   const borderColor = theme === 'dark' ? 'border-gray-800' : 'border-gray-200';
   const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
-  const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
   const inputBg = theme === 'dark' ? 'bg-gray-900' : 'bg-white';
   const inputBorder = theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
   const overlayBg = theme === 'dark' ? 'bg-black/80' : 'bg-black/50';

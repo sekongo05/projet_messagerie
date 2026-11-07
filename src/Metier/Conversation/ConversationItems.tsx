@@ -30,7 +30,6 @@ export const ConversationItem = ({
   onClick,
   onExport,
   onDelete,
-  isGroup = false,
   theme = 'light',
 }: ConversationItemProps) => {
   const [showMenu, setShowMenu] = useState(false);

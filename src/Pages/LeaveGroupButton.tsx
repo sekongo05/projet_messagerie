@@ -23,7 +23,7 @@ const LeaveGroupButton = ({ conversationId, theme: themeProp, onLeave, onError }
   const theme = themeProp || themeContext;
   const [loading, setLoading] = useState(false);
   const [participantState, setParticipantState] = useState<{ canLeave: boolean; status: string; isRejoined: boolean } | null>(null);
-  const [loadingState, setLoadingState] = useState(true);
+  const [, setLoadingState] = useState(true);
 
   // Récupérer l'ID de l'utilisateur connecté
   const getCurrentUserId = (): number => {

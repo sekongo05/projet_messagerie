@@ -103,7 +103,6 @@ const Login = ({ onNavigateToRegister, onLoginSuccess, theme = 'light' }: LoginP
     : 'bg-black';
   
   const cardBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';
-  const textPrimary = theme === 'light' ? 'text-gray-800' : 'text-white';
   const textSecondary = theme === 'light' ? 'text-gray-600' : 'text-gray-300';
   const labelColor = theme === 'light' ? 'text-gray-700' : 'text-gray-300';
   const inputBg = theme === 'light' ? 'bg-white' : 'bg-gray-900';

@@ -7,7 +7,7 @@ import { FiLoader, FiX, FiTrash2 } from 'react-icons/fi';
 import {
   normalizeParticipant,
   getParticipantState,
-  canManageAdminStatus
+  type ParticipantState
 } from '../utils/participantState.utils';
 import { logDiagnostic } from '../utils/participantStateDiagnostic.utils';
 import { validateDeleteResponse, logValidation } from '../utils/participantStateValidation.utils';
@@ -21,23 +21,10 @@ type RemoveParticipantModalProps = {
   theme?: 'light' | 'dark';
 };
 
-type ParticipantWithUserInfo = {
-  id: number;
-  userId: number;
-  isAdmin?: boolean;
+type ParticipantWithUserInfo = ParticipantState & {
   nom?: string;
   prenoms?: string;
   email?: string;
-  hasLeft?: boolean;
-  hasDefinitivelyLeft?: boolean;
-  hasCleaned?: boolean;
-  recreatedAt?: string;
-  recreatedBy?: number;
-  leftAt?: string;
-  leftBy?: number;
-  definitivelyLeftAt?: string;
-  definitivelyLeftBy?: number;
-  [key: string]: any;
 };
 
 const RemoveParticipantModal = ({ 
@@ -51,7 +38,7 @@ const RemoveParticipantModal = ({
   const { theme: themeContext } = useTheme();
   const theme = themeProp || themeContext;
   const [participants, setParticipants] = useState<ParticipantWithUserInfo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);

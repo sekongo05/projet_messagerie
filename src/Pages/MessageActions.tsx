@@ -41,12 +41,7 @@ const MessageActions = ({
   const handleDeleteForMe = () => {
     if (onDeleteForMe) {
       onDeleteForMe();
-    }
-    setShowMenu(false);
-  };
-
-  const handleDeleteForAll = () => {
-    if (onDeleteForAll) {
+    } else if (onDeleteForAll) {
       onDeleteForAll();
     }
     setShowMenu(false);

@@ -16,7 +16,6 @@ const MessageInput = ({
   userId,
   onSend,
   theme = 'light',
-  onError,
   onWarning,
 }: MessageInputProps) => {
   const [content, setContent] = useState("");

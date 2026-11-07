@@ -7,8 +7,7 @@ import { FiLoader, FiX } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import {
   normalizeParticipant,
-  getParticipantState,
-  canRejoinParticipant
+  getParticipantState
 } from '../utils/participantState.utils';
 import { dispatchParticipantLeft } from '../Hooks/useCurrentUserLeftGroup';
 import { logDiagnostic, diagnoseMultipleParticipants } from '../utils/participantStateDiagnostic.utils';
@@ -293,7 +292,7 @@ const AddParticipantsModal = ({
         if (typeof window !== 'undefined') {
           const globalDiagnostic = diagnoseMultipleParticipants(response.items, 'create');
           console.log(globalDiagnostic.summary);
-          response.items.forEach((participant, index) => {
+          response.items.forEach((participant: any, index: number) => {
             logDiagnostic(participant, 'create', `Participant ${index + 1}`);
             
             // Validation : vérifier que la logique métier est respectée
@@ -318,7 +317,7 @@ const AddParticipantsModal = ({
         }
         
         // Logger les états de chaque participant
-        response.items.forEach((participant, index) => {
+        response.items.forEach((participant: any, index: number) => {
           // Log de toute la structure de l'objet participant
           console.log(`=== Structure complète du participant ${index + 1} ===`);
           console.log('Toutes les clés de l\'objet participant:', Object.keys(participant));
@@ -411,8 +410,6 @@ const AddParticipantsModal = ({
   const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
-  const inputBg = theme === 'dark' ? 'bg-gray-700' : 'bg-white';
-  const inputBorder = theme === 'dark' ? 'border-gray-600' : 'border-gray-300';
   const cardBg = theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50';
 
   return (

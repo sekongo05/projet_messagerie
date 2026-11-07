@@ -230,7 +230,7 @@ export function getParticipantStatusMessage(
  */
 export function canManageAdminStatus(
   participant: ParticipantState,
-  currentUserId: number,
+  _currentUserId: number,
   isCreatorOrAdmin: boolean
 ): boolean {
   const normalized = normalizeParticipant(participant);

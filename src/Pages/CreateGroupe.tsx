@@ -3,10 +3,7 @@ import { useTheme } from '../mode';
 import { getUsers, type User } from '../Api/User.api';
 import { createConversation } from '../Api/ConversationCreate.api';
 import { createParticipant } from '../Api/createParticipantConversation.api';
-import axios from 'axios';
 import { FiLoader, FiX } from 'react-icons/fi';
-
-const API_URL = 'http://localhost:8080';
 
 type CreateGroupeProps = {
   currentUserId: number;
